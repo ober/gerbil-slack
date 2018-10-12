@@ -146,7 +146,6 @@ namespace: slack
 		       "|" .id
 		       "|" .is_archived
 		       "|" .is_mpim
-
 		       "|" .priority "|")))
 	groups))))
 
@@ -262,6 +261,7 @@ namespace: slack
    ("im-open" (hash (description: "Open chat with user") (usage: "chat-open user") (count: 1)))
    ("list-users" (hash (description: "user list.") (usage: "list-users") (count: 0)))
    ("msg" (hash (description: "Send message to user.") (usage: "msg <username> <message>") (count: 2)))
+   ("whisper" (hash (description: "Send message to user.") (usage: "post-ephemeral <username> <channel> ber<message>") (count: 3)))
    ("post" (hash (description: "Post IM message to channel.") (usage: "post <channel> <message> <from>") (count: 3)))
    ("search" (hash (description: "Search messages for pattern.") (usage: "searchm <pattern>") (count: 1)))
    ("set-topic" (hash (description: "Set topic on channel") (usage: "set-topic <channel> <topic>") (count: 2)))
@@ -346,3 +346,19 @@ namespace: slack
      ["Content-type" :: "application/json"]
      ["Authorization" :: (format "Bearer ~a" .token) ]
      ]))
+
+(def (whisper user channel msg)
+  (let-hash (load-config)
+    (let* ((uri "https://slack.com/api/chat.postEphemeral")
+	   (data (json-object->string
+		  (hash
+		   ("as_user" #t)
+		   ("attachments" #f)
+		   ("channel" channel)
+		   ("id" (im-open user))
+		   ("link_names" #t)
+		   ("parse" "none")
+		   ("user" (id-for-user user))
+		   ("text" msg))))
+	   (results (do-post uri (default-headers) data)))
+      (displayln results))))
