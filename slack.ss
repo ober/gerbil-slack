@@ -179,7 +179,7 @@ namespace: slack
   (let-hash (load-config)
     (let ((channel (im-open user)))
       (if channel
-	(post channel message .username)
+	(displayln (post channel message .username))
 	(displayln "Invalid user: " user)))))
 
 
