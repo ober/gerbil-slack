@@ -151,14 +151,16 @@ namespace: slack
 	groups))))
 
 (def (post channel message from)
-  (let* ((uri "https://slack.com/api/chat.postMessage")
-	 (data (json-object->string
-		(hash
-		 ("username" from)
-		 ("text" message)
-		 ("channel" channel))))
-	 (results (do-post uri (default-headers) data)))
-    (displayln results)))
+  (let-hash (load-config)
+    (let* ((uri "https://slack.com/api/chat.postMessage")
+	   (data (json-object->string
+		  (hash
+		   ("as_user" #t)
+		   ("username" from)
+		   ("text" message)
+		   ("channel" channel))))
+	   (results (do-post uri (default-headers) data)))
+      (displayln results))))
 
 (def (im-open name)
   (let* ((uri "https://slack.com/api/im.open")
@@ -171,7 +173,7 @@ namespace: slack
 	 (myjson (from-json results)))
     (let-hash myjson
       (let-hash .channel
-	(displayln .id)))))
+	.id))))
 
 (def (msg user message)
   (let-hash (load-config)
