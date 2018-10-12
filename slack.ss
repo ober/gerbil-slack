@@ -187,22 +187,27 @@ namespace: slack
     (let*
 	((uri (format "https://slack.com/api/search.messages?token=~a&count=~a&query=~a" .token 100 query))
 	 (results (do-get uri))
-	 (myjson (from-json results))
-	 (matches (hash-get (hash-get myjson 'messages) 'matches)))
+	 (myjson (from-json results)))
+      (let-hash myjson
+	(if .?messages
+	  (let-hash .?messages
+	    (if .?matches
+	      (let-hash .?matches
+		;; 	 (matches (hash-get (hash-get myjson 'messages) 'matches)))
 
-      (displayln "|id|team|channel|type|user|username|ts|text|permalink|")
-      (displayln "|--|-------|-----|-------------|----|---------------|--------|")
-      (for-each
-	(lambda (m)
-     	  (let-hash m
-       	    (displayln "|" .username
-      	  	       "|" (format "~a:~a" (hash-get .channel 'name) (hash-get .channel 'id))
-      	  	       "|" .text
-      	  	       "|" .type
-      	  	       "|" .user
-      	  	       "|" .ts
-      	  	       "|" .permalink "|")))
-	matches))))
+		(displayln "|id|team|channel|type|user|username|ts|text|permalink|")
+		(displayln "|--|-------|-----|-------------|----|---------------|--------|")
+		(for-each
+      		  (lambda (m)
+      		    (let-hash m
+       		      (displayln "|" .username
+      	  			 "|" (format "~a:~a" (hash-get .channel 'name) (hash-get .channel 'id))
+      	  			 "|" .text
+      	  			 "|" .type
+      	  			 "|" .user
+      	  			 "|" .ts
+      	  			 "|" .permalink "|")))
+      		  ..matches)))))))))
 
 (def (users)
   (let-hash (load-config)
