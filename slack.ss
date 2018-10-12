@@ -22,7 +22,7 @@ namespace: slack
   )
 
 (def program-name "slack")
-(def config-file "~/.jira.yaml")
+(def config-file "~/.slack.yaml")
 
 (def user-list (hash))
 (def channel-list (hash))
@@ -259,7 +259,7 @@ namespace: slack
    ("id-for-user" (hash (description: "Open chat with user") (usage: "id-for-user user") (count: 1)))
    ("im-open" (hash (description: "Open chat with user") (usage: "chat-open user") (count: 1)))
    ("list-users" (hash (description: "user list.") (usage: "list-users") (count: 0)))
-   ("msg" (hash (description: "Send message to user.") (usage: "msg <username> <message>") (count: 3)))
+   ("msg" (hash (description: "Send message to user.") (usage: "msg <username> <message>") (count: 2)))
    ("post" (hash (description: "Post IM message to channel.") (usage: "post <channel> <message> <from>") (count: 3)))
    ("search" (hash (description: "Search messages for pattern.") (usage: "searchm <pattern>") (count: 1)))
    ("set-topic" (hash (description: "Set topic on channel") (usage: "set-topic <channel> <topic>") (count: 2)))
