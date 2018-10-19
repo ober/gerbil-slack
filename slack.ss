@@ -6,6 +6,9 @@ namespace: slack
 (import
   :gerbil/gambit
   :scheme/base
+  :std/crypto/cipher
+  :std/crypto/etc
+  :std/crypto/libcrypto
   :std/coroutine
   :std/format
   :std/generic
@@ -28,6 +31,25 @@ namespace: slack
 (def channel-list (hash))
 
 (def DEBUG (getenv "DEBUG" #f))
+
+(def interactives
+  (hash
+   ("channels" (hash (description: "Channel list.") (usage: "channels") (count: 0)))
+   ("chats" (hash (description: "Chat list.") (usage: "chats") (count: 0)))
+   ("config" (hash (description: "Set your encrypted password.") (usage: "config") (count: 0)))
+   ("ghistory" (hash (description: "Group history.") (usage: "ghistory <group>") (count: 1)))
+   ("groups" (hash (description: "Group list.") (usage: "groups") (count: 0)))
+   ("id-for-user" (hash (description: "Open chat with user") (usage: "id-for-user user") (count: 1)))
+   ("im-open" (hash (description: "Open chat with user") (usage: "chat-open user") (count: 1)))
+   ("list-users" (hash (description: "user list.") (usage: "list-users") (count: 0)))
+   ("msg" (hash (description: "Send message to user.") (usage: "msg <username> <message>") (count: 2)))
+   ("whisper" (hash (description: "Send message to user.") (usage: "post-ephemeral <username> <channel> ber<message>") (count: 3)))
+   ("post" (hash (description: "Post IM message to channel.") (usage: "post <channel> <message> <from>") (count: 3)))
+   ("search" (hash (description: "Search messages for pattern.") (usage: "searchm <pattern>") (count: 1)))
+   ("set-topic" (hash (description: "Set topic on channel") (usage: "set-topic <channel> <topic>") (count: 2)))
+   ("user" (hash (description: "Open chat with user") (usage: "user user") (count: 1)))))
+
+
 
 (def (dp msg)
   (when DEBUG
@@ -256,21 +278,6 @@ namespace: slack
 	members)
       id)))
 
-(def interactives
-  (hash
-   ("channels" (hash (description: "Channel list.") (usage: "channels") (count: 0)))
-   ("chats" (hash (description: "Chat list.") (usage: "chats") (count: 0)))
-   ("ghistory" (hash (description: "Group history.") (usage: "ghistory <group>") (count: 1)))
-   ("groups" (hash (description: "Group list.") (usage: "groups") (count: 0)))
-   ("id-for-user" (hash (description: "Open chat with user") (usage: "id-for-user user") (count: 1)))
-   ("im-open" (hash (description: "Open chat with user") (usage: "chat-open user") (count: 1)))
-   ("list-users" (hash (description: "user list.") (usage: "list-users") (count: 0)))
-   ("msg" (hash (description: "Send message to user.") (usage: "msg <username> <message>") (count: 2)))
-   ("whisper" (hash (description: "Send message to user.") (usage: "post-ephemeral <username> <channel> ber<message>") (count: 3)))
-   ("post" (hash (description: "Post IM message to channel.") (usage: "post <channel> <message> <from>") (count: 3)))
-   ("search" (hash (description: "Search messages for pattern.") (usage: "searchm <pattern>") (count: 1)))
-   ("set-topic" (hash (description: "Set topic on channel") (usage: "set-topic <channel> <topic>") (count: 2)))
-   ("user" (hash (description: "Open chat with user") (usage: "user user") (count: 1)))))
 
 (def (main . args)
   (if (null? args)
@@ -342,7 +349,10 @@ namespace: slack
      (lambda (k v)
        (hash-put! config (string->symbol k) v))
      (car (yaml-load config-file)))
-    config))
+    (let-hash config
+      (when (and .?key .?iv .?password)
+	(hash-put! config 'token (get-password-from-config .key .iv .password)))
+      config)))
 
 (def (default-headers)
   (let-hash (load-config)
@@ -367,3 +377,29 @@ namespace: slack
 		   ("text" msg))))
 	   (results (do-post uri (default-headers) data)))
       (displayln results))))
+
+(def (config)
+  (let-hash (load-config)
+    (displayln "Please enter your slack token")
+    (let* ((password (read-line (current-input-port)))
+	   (cipher (make-aes-256-ctr-cipher))
+	   (iv (random-bytes (cipher-iv-length cipher)))
+	   (key (random-bytes (cipher-key-length cipher)))
+	   (encrypted-password (encrypt cipher key iv password))
+	   (enc-pass-store (u8vector->base64-string encrypted-password))
+	   (iv-store (u8vector->base64-string iv))
+	   (key-store (u8vector->base64-string key)))
+      (displayln "Add the following lines to your " config-file)
+      (displayln "-----------------------------------------")
+      (displayln "password: " enc-pass-store)
+      (displayln "iv: " iv-store)
+      (displayln "key: " key-store)
+      (displayln "-----------------------------------------"))))
+
+(def (get-password-from-config key iv password)
+  (bytes->string
+   (decrypt
+    (make-aes-256-ctr-cipher)
+    (base64-string->u8vector key)
+    (base64-string->u8vector iv)
+    (base64-string->u8vector password))))
