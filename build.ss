@@ -8,13 +8,17 @@
 
 (def build-spec
   '("slack"
-    (exe: "slack" "-ld-options" "-lyaml -lssl -lz -L/usr/local/lib/" "-cc-options" "-I/usr/local/include")
-    ))
+    (exe: "slack"
+	  "-cc-options" "-I/usr/local/opt/leveldb/include -I/usr/local/include"
+	  "-ld-options" "-L/usr/local/opt/leveldb/lib -lleveldb -lyaml -lssl -lz -L/usr/local/lib/"
+	  )))
+
 
 (def build-spec-static
   '("slack"
     (static-exe: "slack"
-                 "-ld-options" "-lyaml -lssl -lz -L/usr/local/lib"
+		 "-cc-options" "-I/usr/local/opt/leveldb/include -I/usr/local/include"
+                 "-ld-options" "-lyaml -lssl -lz -L/usr/local/lib -lleveldb"
                  "-prelude" "(declare (not safe))")))
 
 (def srcdir

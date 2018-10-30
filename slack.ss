@@ -5,11 +5,15 @@ namespace: slack
 (declare (not optimize-dead-definitions))
 (import
   :gerbil/gambit
+  :gerbil/gambit/os
+  :gerbil/gambit/threads
   :scheme/base
+  :std/coroutine
   :std/crypto/cipher
   :std/crypto/etc
   :std/crypto/libcrypto
-  :std/coroutine
+  :std/db/leveldb
+  :std/iter
   :std/format
   :std/generic
   :std/net/request
@@ -39,6 +43,7 @@ namespace: slack
    ("config" (hash (description: "Set your encrypted password.") (usage: "config") (count: 0)))
    ("ghistory" (hash (description: "Group history.") (usage: "ghistory <group>") (count: 1)))
    ("groups" (hash (description: "Group list.") (usage: "groups") (count: 0)))
+   ("list-records" (hash (description: "list records.") (usage: "list-records") (count: 0)))
    ("id-for-user" (hash (description: "Open chat with user") (usage: "id-for-user user") (count: 1)))
    ("im-open" (hash (description: "Open chat with user") (usage: "chat-open user") (count: 1)))
    ("list-users" (hash (description: "user list.") (usage: "list-users") (count: 0)))
@@ -48,8 +53,6 @@ namespace: slack
    ("search" (hash (description: "Search messages for pattern.") (usage: "searchm <pattern>") (count: 1)))
    ("set-topic" (hash (description: "Set topic on channel") (usage: "set-topic <channel> <topic>") (count: 2)))
    ("user" (hash (description: "Open chat with user") (usage: "user user") (count: 1)))))
-
-
 
 (def (dp msg)
   (when DEBUG
@@ -403,3 +406,28 @@ namespace: slack
     (base64-string->u8vector key)
     (base64-string->u8vector iv)
     (base64-string->u8vector password))))
+
+;; (def db-dir
+;;   (format "~a/slack-db" (user-info-home (user-info (user-name)))))
+
+(def (list-records)
+  (displayln "records here"))
+  ;; (let ((records
+  ;; 	 (leveldb-open db-dir (leveldb-options
+  ;; 			       block-size: (def-num (getenv "k_block_size" #f))
+  ;; 			       write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
+  ;; 			       lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f))))))
+  ;;   (def itor (leveldb-iterator records))
+  ;;   (leveldb-iterator-seek-first itor)
+  ;;   (while (leveldb-iterator-valid? itor)
+  ;;     (let ((val (u8vector->object (leveldb-iterator-value itor)))
+  ;; 	    (key (leveldb-iterator-key itor)))
+  ;; 	(displayln (hash->list key))
+  ;; 	(displayln (hash->list val))
+  ;; 	(leveldb-iterator-next itor)))
+  ;;   (leveldb-iterator-close itor)))
+
+(def (def-num num)
+  (if (string? num)
+    (string->number num)
+    num))
