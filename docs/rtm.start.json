@@ -1,0 +1,302 @@
+{
+  "get": {
+    "consumes": [
+      "application/x-www-form-urlencoded"
+    ],
+    "description": "Starts a Real Time Messaging session.",
+    "externalDocs": {
+      "description": "API method documentation",
+      "url": "https://api.slack.com/methods/rtm.start"
+    },
+    "operationId": "rtm_start",
+    "parameters": [
+      {
+        "description": "Exclude latest timestamps for channels, groups, mpims, and ims. Automatically sets `no_unreads` to `1`",
+        "in": "query",
+        "name": "no_latest",
+        "type": "boolean"
+      },
+      {
+        "description": "Return timestamp only for latest message object of each channel (improves performance).",
+        "in": "query",
+        "name": "simple_latest",
+        "type": "boolean"
+      },
+      {
+        "description": "Set this to `true` to receive the locale for users and channels. Defaults to `false`",
+        "in": "query",
+        "name": "include_locale",
+        "type": "boolean"
+      },
+      {
+        "description": "Only deliver presence events when requested by subscription. See [presence subscriptions](/docs/presence-and-status#subscriptions).",
+        "in": "query",
+        "name": "presence_sub",
+        "type": "boolean"
+      },
+      {
+        "description": "Skip unread counts for each channel (improves performance).",
+        "in": "query",
+        "name": "no_unreads",
+        "type": "boolean"
+      },
+      {
+        "description": "Batch presence deliveries via subscription. Enabling changes the shape of `presence_change` events. See [batch presence](/docs/presence-and-status#batching).",
+        "in": "query",
+        "name": "batch_presence_aware",
+        "type": "boolean"
+      },
+      {
+        "description": "Returns MPIMs to the client in the API response.",
+        "in": "query",
+        "name": "mpim_aware",
+        "type": "boolean"
+      },
+      {
+        "description": "Authentication token. Requires scope: `rtm:stream`",
+        "in": "query",
+        "name": "token",
+        "type": "string"
+      }
+    ],
+    "produces": [
+      "application/json"
+    ],
+    "responses": {
+      "200": {
+        "description": "Typical success response",
+        "examples": {
+          "application/json": {
+            "ok": true
+          }
+        },
+        "schema": {
+          "additionalProperties": true,
+          "description": "Schema for successful response from rtm.start method",
+          "properties": {
+            "bots": {
+              "type": "array"
+            },
+            "cache_ts": {
+              "type": "integer"
+            },
+            "cache_ts_version": {
+              "type": "string"
+            },
+            "cache_version": {
+              "type": "string"
+            },
+            "can_manage_shared_channels": {
+              "type": "boolean"
+            },
+            "channels": {
+              "items": {
+                "$ref": "#/definitions/objs_conversation"
+              },
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "dead_pig": {
+              "type": "boolean"
+            },
+            "dnd": {
+              "$ref": "#/definitions/objs_dnd"
+            },
+            "groups": {
+              "description": "Group objects present for rtm.start. Can be null when there are no groups",
+              "items": {
+                "items": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/definitions/objs_conversation"
+                  }
+                ]
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "ims": {
+              "items": {
+                "$ref": "#/definitions/objs_conversation"
+              },
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "latest_event_ts": {
+              "type": "string"
+            },
+            "mpims": {
+              "description": "Mpim objects present for rtm.start. Can be null when there are no mpims",
+              "items": {
+                "items": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/definitions/objs_conversation"
+                  }
+                ]
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "non_threadable_channels": {
+              "type": "array"
+            },
+            "ok": {
+              "$ref": "#/definitions/defs_ok_true"
+            },
+            "read_only_channels": {
+              "type": "array"
+            },
+            "self": {
+              "additionalProperties": true,
+              "properties": {
+                "created": {
+                  "type": "integer"
+                },
+                "id": {
+                  "type": "string"
+                },
+                "manual_presence": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "prefs": {
+                  "$ref": "#/definitions/prefs_prefs"
+                }
+              },
+              "required": [
+                "created",
+                "id",
+                "manual_presence",
+                "prefs"
+              ],
+              "type": "object"
+            },
+            "subteams": {
+              "additionalProperties": true,
+              "properties": {
+                "all": {
+                  "type": "array"
+                },
+                "self": {
+                  "type": "array"
+                }
+              },
+              "required": [
+                "all",
+                "self"
+              ],
+              "type": "object"
+            },
+            "team": {
+              "$ref": "#/definitions/objs_team"
+            },
+            "thread_only_channels": {
+              "type": "array"
+            },
+            "url": {
+              "format": "uri",
+              "type": "string"
+            },
+            "users": {
+              "items": {
+                "$ref": "#/definitions/objs_user"
+              },
+              "minItems": 1,
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ok",
+            "bots",
+            "cache_ts",
+            "cache_ts_version",
+            "can_manage_shared_channels",
+            "channels",
+            "groups",
+            "dnd",
+            "ims",
+            "latest_event_ts",
+            "non_threadable_channels",
+            "read_only_channels",
+            "self",
+            "subteams",
+            "thread_only_channels",
+            "team",
+            "url",
+            "users"
+          ],
+          "title": "rtm.start success schema",
+          "type": "object"
+        }
+      },
+      "default": {
+        "description": "Typical error response",
+        "examples": {
+          "application/json": {
+            "error": "invalid_auth",
+            "ok": false
+          }
+        },
+        "schema": {
+          "additionalProperties": true,
+          "description": "Schema for error response from rtm.start method",
+          "properties": {
+            "error": {
+              "enum": [
+                "migration_in_progress",
+                "not_authed",
+                "invalid_auth",
+                "account_inactive",
+                "token_revoked",
+                "no_permission",
+                "org_login_required",
+                "invalid_arg_name",
+                "invalid_array_arg",
+                "invalid_charset",
+                "invalid_form_data",
+                "invalid_post_type",
+                "missing_post_type",
+                "team_added_to_org",
+                "invalid_json",
+                "json_not_object",
+                "request_timeout",
+                "upgrade_required",
+                "fatal_error"
+              ],
+              "type": "string"
+            },
+            "ok": {
+              "$ref": "#/definitions/defs_ok_false"
+            }
+          },
+          "required": [
+            "ok",
+            "error"
+          ],
+          "title": "rtm.start error schema",
+          "type": "object"
+        }
+      }
+    },
+    "security": [
+      {
+        "slackAuth": [
+          "rtm:stream"
+        ]
+      }
+    ],
+    "tags": [
+      "rtm"
+    ]
+  }
+}

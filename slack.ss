@@ -1,22 +1,35 @@
 package: slack
 namespace: slack
+
 (export main)
 
 (declare (not optimize-dead-definitions))
+(def version "0.01")
+
 (import
   :gerbil/gambit
+  :gerbil/gambit/bits
+  :gerbil/gambit/misc
   :gerbil/gambit/os
+  :gerbil/gambit/ports
   :gerbil/gambit/threads
   :scheme/base
+  :std/actor/message
+  :std/actor/proto
   :std/coroutine
   :std/crypto/cipher
   :std/crypto/etc
   :std/crypto/libcrypto
   :std/db/leveldb
-  :std/iter
+  :std/error
   :std/format
   :std/generic
+  :std/iter
+  :std/logger
+  :std/misc/completion
+  :std/misc/threads
   :std/net/request
+  :std/net/websocket
   :std/pregexp
   :std/srfi/13
   :std/srfi/19
@@ -43,16 +56,21 @@ namespace: slack
    ("config" (hash (description: "Set your encrypted password.") (usage: "config") (count: 0)))
    ("ghistory" (hash (description: "Group history.") (usage: "ghistory <group>") (count: 1)))
    ("groups" (hash (description: "Group list.") (usage: "groups") (count: 0)))
-   ("list-records" (hash (description: "list records.") (usage: "list-records") (count: 0)))
+   ("gw" (hash (description: "Send message to user.") (usage: "gw <group> <channel> <message>") (count: 3)))
    ("id-for-user" (hash (description: "Open chat with user") (usage: "id-for-user user") (count: 1)))
    ("im-open" (hash (description: "Open chat with user") (usage: "chat-open user") (count: 1)))
-   ("list-users" (hash (description: "user list.") (usage: "list-users") (count: 0)))
+   ("list-records" (hash (description: "list records.") (usage: "list-records") (count: 0)))
    ("msg" (hash (description: "Send message to user.") (usage: "msg <username> <message>") (count: 2)))
-   ("whisper" (hash (description: "Send message to user.") (usage: "post-ephemeral <username> <channel> ber<message>") (count: 3)))
+   ("delete" (hash (description: "Delete a message.") (usage: "delete <channel> <timestamp>") (count: 2)))
    ("post" (hash (description: "Post IM message to channel.") (usage: "post <channel> <message> <from>") (count: 3)))
+   ("rtm-start" (hash (description: "Start realtime chat.") (usage: "rtm-start") (count: 0)))
+   ("rtm-start-json" (hash (description: "Start realtime chat.") (usage: "rtm-start") (count: 0)))
    ("search" (hash (description: "Search messages for pattern.") (usage: "searchm <pattern>") (count: 1)))
    ("set-topic" (hash (description: "Set topic on channel") (usage: "set-topic <channel> <topic>") (count: 2)))
-   ("user" (hash (description: "Open chat with user") (usage: "user user") (count: 1)))))
+   ("user" (hash (description: "Open chat with user") (usage: "user user") (count: 1)))
+   ("users" (hash (description: "user list.") (usage: "users") (count: 0)))
+   ("whisper" (hash (description: "Send message to user.") (usage: "whisper <username> <channel> <message>") (count: 3)))
+   ))
 
 (def (dp msg)
   (when DEBUG
@@ -80,10 +98,10 @@ namespace: slack
 (def (do-post uri headers data)
   (dp (print-curl "post" uri headers data))
   (let* ((reply (http-post uri
-			   headers: headers
-			   data: data))
-	 (status (request-status reply))
-	 (text (request-text reply)))
+                           headers: headers
+                           data: data))
+         (status (request-status reply))
+         (text (request-text reply)))
 
     (if (success? status)
       text
@@ -91,62 +109,59 @@ namespace: slack
 
 (def (do-get uri)
   (let* ((reply (http-get uri))
-	 (status (request-status reply))
-	 (text (request-text reply)))
+         (status (request-status reply))
+         (text (request-text reply)))
     (if (success? status)
       text
       (displayln (format "Error: got ~a on request. text: ~a~%" status text)))))
 
 (def (from-json json)
-  ;;(try
   (with-input-from-string json read-json))
-;;   (catch (e)
-;;     (displayln "error parsing json " e))))
 
 (def (hash->str h)
-  (let ((results '()))
+  (let ((results []))
     (if (table? h)
       (begin
-	(hash-for-each
-	 (lambda (k v)
-	   (set! results (append results (list (format " ~a->" k) (format "~a   " v)))))
-	 h)
-	(append-strings results))
+        (hash-for-each
+         (lambda (k v)
+           (set! results (cons  [ (format " ~a->" k) (format "~a   " v)]   results)))
+         h)
+        (append-strings results))
       ;;        (pregexp-replace "\n" (append-strings results) "\t"))
       "N/A")))
 
 (def (chats)
   (let-hash (load-config)
     (let* ((uri (format "https://slack.com/api/im.list?token=~a" .token))
-	   (results (do-get uri))
-	   (myjson (from-json results))
-	   (status (hash-get myjson 'status))
-	   (ims (hash-get myjson 'ims)))
+           (results (do-get uri))
+           (myjson (from-json results))
+           (status (hash-get myjson 'status))
+           (ims (hash-get myjson 'ims)))
       (displayln "|id|created|is_im|is_org_shared|user|is_user_deleted|priority|")
       (displayln "|--|-------|-----|-------------|----|---------------|--------|")
       (for-each
-	(lambda (im)
-	  (let-hash im
-	    (displayln "|" .id
-		       "|" .created
-		       "|" .is_im
-		       "|" .is_org_shared
-		       "|" .user
-		       "|" .priority "|")))
-	ims))))
+        (lambda (im)
+          (let-hash im
+            (displayln "|" .id
+                       "|" .created
+                       "|" .is_im
+                       "|" .is_org_shared
+                       "|" .user
+                       "|" .priority "|")))
+        ims))))
 
 (def (ghistory group)
   (let-hash (load-config)
     (let* ((uri (format "https://slack.com/api/groups.history?token=~a&channel=~a&count=~a" .token group 2000))
-	   (results (do-get uri))
-	   (myjson (from-json results)))
+           (results (do-get uri))
+           (myjson (from-json results)))
       (displayln results))))
 
 (def (user user)
   (let-hash (load-config)
     (let* ((uri (format "https://slack.com/api/users.info?token=~a&user=~a" .token user))
-	   (results (do-get uri))
-	   (myjson (from-json results)))
+           (results (do-get uri))
+           (myjson (from-json results)))
       (displayln results))))
 
 (def (groups)
@@ -207,6 +222,18 @@ namespace: slack
 	(displayln "Invalid user: " user)))))
 
 
+(def (delete channel timestamp)
+  "Remove a message from a chat channel"
+  (let-hash (load-config)
+    (let* ((uri "https://slack.com/api/chat.delete")
+	   (data (json-object->string
+		  (hash
+		   ("as_user" #t)
+		   ("ts" timestamp)
+		   ("channel" channel))))
+	   (results (do-post uri (default-headers) data)))
+      (displayln results))))
+
 (def (search query)
   (let-hash (load-config)
     (let*
@@ -240,31 +267,29 @@ namespace: slack
 	   (results (do-get uri))
 	   (myjson (from-json results))
 	   (members (hash-ref myjson 'members)))
-      members)))
+      (print-users members))))
 
-(def (list-users)
-  (let ((slack-users (users)))
-    (displayln "|Real Name |username| Owner? | Ultra? | Restricted?| team id| Updated| App user?| Profile| id | Time zone|")
-    (displayln "|--|-------|-----|-------------|----|---------------|--------|")
-
+(def (print-users users)
+  (when (list? users)
     (for-each
-      (lambda (u)
-;; ((is_owner . #f) (tz . America/Los_Angeles) (is_primary_owner . #f) (is_admin . #f) (name . imartinez) (is_ultra_retricted . #f) (is_restricted . #f) (team_id . T069UQF1S) (is_bot . #f) (updated . 1533241983) (tz_label . PacificDaylight Time) (id . U4MQCQLDU) (color . 8d4b84) (real_name . Izzy Martinez) (deleted . #f) (tz_offset . -25200) (is_app_user . #f) (profile . #<table #614>))
-	(let-hash u
-	  (displayln
-	   "|" .?name
-	   "|" .?real_name
-	   "|" .?is_primary_owner
-	   "|" .?is_ultra_restricted
-	   "|" .?is_restricted
-	   "|" .?team_id
-	   "|" .?updated
-	   "|" .?is_app_user
-	   "|" (hash->list .profile)
-	   "|" .?id
-	   "|" .?tz_label
-	   "|")))
-      slack-users)))
+      (lambda (user)
+	(print-user user))
+      users)))
+
+(def (print-user user)
+  (when (table? user)
+    (let-hash user
+      (displayln "name: " .?name
+		 " real_name: " .?real_name
+		 " is_primary_user: " .?is_primary_owner
+		 " is_ultra_restricted: " .?is_ultra_restricted
+		 " is_restricted: " .?is_restricted
+		 " team_id: " .?team_id
+		 " updated: " .?updated
+		 " is_app_user: " .?is_app_user
+		 " profile: " (hash->list .profile)
+		 " id: " .?id
+		 " tz_label" .?tz_label))))
 
 (def (id-for-user user)
   (let-hash (load-config)
@@ -305,7 +330,7 @@ namespace: slack
     (exit 2)))
 
 (def (usage)
-  (displayln "Usage: datadog <verb>")
+  (displayln (format "Slack: version ~a" version))
   (displayln "Verbs:")
   (for-each
     (lambda (k)
@@ -318,8 +343,35 @@ namespace: slack
     (let* ((uri (format "https://slack.com/api/channels.list?token=~a" .token))
 	   (headers '(("Content-type" . "application/json")))
 	   (results (do-get uri))
-	   (myjson (from-json results)))
-      (displayln results))))
+	   (channels (from-json results)))
+      (print-channels (hash-ref channels 'channels)))))
+
+(def (print-channels channels)
+  (when (list? channels)
+    (for-each
+      (lambda (channel)
+	(print-channel channel))
+      channels)))
+
+(def (print-channel channel)
+  (if (table? channel)
+    (let-hash channel
+      (displayln "is_channel: " .?is_channel
+		 " created: " .?created
+		 " is_member: " .?is_member
+		 " is_mpim: " .?is_mpim
+		 " previous_names: " .?previous_names
+		 " id: " .?id
+		 " unlinked: " .?unlinked
+		 " priority: " .?priority
+		 " has_pins: " .?has_pins
+		 " name: " .?name
+		 " is_archived: " .?is_archived
+		 " is_general: " .?is_general
+		 " creator: " .?creator
+		 " name_normalized: " .?name_normalized
+		 " is_org_shared: " .?is_org_shared
+		 " is_private: " .?is_private))))
 
 (def (set-topic channel topic)
   (let* ((uri "https://slack.com/api/channels.setTopic")
@@ -407,27 +459,79 @@ namespace: slack
     (base64-string->u8vector iv)
     (base64-string->u8vector password))))
 
-;; (def db-dir
-;;   (format "~a/slack-db" (user-info-home (user-info (user-name)))))
-
 (def (list-records)
   (displayln "records here"))
-  ;; (let ((records
-  ;; 	 (leveldb-open db-dir (leveldb-options
-  ;; 			       block-size: (def-num (getenv "k_block_size" #f))
-  ;; 			       write-buffer-size: (def-num (getenv "k_write_buffer_size" #f))
-  ;; 			       lru-cache-capacity: (def-num (getenv "k_lru_cache_capacity" #f))))))
-  ;;   (def itor (leveldb-iterator records))
-  ;;   (leveldb-iterator-seek-first itor)
-  ;;   (while (leveldb-iterator-valid? itor)
-  ;;     (let ((val (u8vector->object (leveldb-iterator-value itor)))
-  ;; 	    (key (leveldb-iterator-key itor)))
-  ;; 	(displayln (hash->list key))
-  ;; 	(displayln (hash->list val))
-  ;; 	(leveldb-iterator-next itor)))
-  ;;   (leveldb-iterator-close itor)))
 
 (def (def-num num)
   (if (string? num)
     (string->number num)
     num))
+
+(def (rtm-start-json)
+  (let-hash (load-config)
+    (let* ((uri (format "https://slack.com/api/rtm.start?token=~a" .token))
+	   (results (do-get uri)))
+      (displayln results))))
+
+(def (rtm-start)
+  (let-hash (load-config)
+    (let* ((uri (format "https://slack.com/api/rtm.start?token=~a" .token))
+	   (results (do-get uri))
+	   (myjson (from-json results))
+	   (status (hash-get myjson 'status)))
+      (let-hash myjson
+	(displayln "self: " (hash->list .self))
+	(displayln "OK: " .ok)
+	(displayln "dnd: " (if (and .?dnd (table? .?dnd)) (hash->list .dnd)))
+	(displayln "url: " .?url)
+	(displayln "Channels: ------------------------------------------------------------")
+	(print-channels .?channels)
+	(displayln "Users: ------------------------------------------------------------")
+	(print-users .?users)
+	(for-each
+	  (lambda (user)
+	    (displayln (hash->list user)))
+	  .?users)
+
+	(displayln "Bots: ------------------------------------------------------------")
+	(for-each
+	  (lambda (bot)
+	    (displayln (hash->list bot)))
+	  .?bots)
+
+	(displayln "team: " (hash->list .?team))
+	(displayln "groups: " .?groups)
+	(displayln "self: " .?self)
+	(displayln "ims: " .?ims)
+	(displayln "thread_only_channels: " .?thread_only_channels)
+	(displayln "non_threadable_channels: " .?non_threadable_channels)
+	(displayln "subteams: " .?subteams)
+	(displayln "cache_version: " .?cache_version)
+	(displayln "cache_ts_version: " .?cache_ts_version)
+	(displayln "latest_event_ts: " .?latest_event_ts)
+	(displayln "can_manage_shared_channels: " .?can_manage_shared_channels)
+	(displayln "cache_ts: " .?cache_ts)
+	(displayln "read_only_channels: " .?read_only_channels)))))
+
+(def (slack-send ws msg)
+  (let (outp (open-output-u8vector))
+    (write-json msg outp)
+    (websocket-send ws (get-output-u8vector outp) 'text)))
+
+(def (slack-recv ws)
+  (let ((values bytes type) (websocket-recv ws))
+    (if (eq? type 'text)
+      (read-json (open-input-u8vector [char-encoding: 'UTF-8 init: bytes]))
+      (begin
+        (warning "wamp-recv: server sent binary data (~s)" (u8vector-length bytes))
+        (raise-io-error 'wamp-recv "server sent binary data" bytes)))))
+
+(def (gw group channel message)
+  "Take a group and whisper the message to each member in the channel"
+  (let-hash (load-config)
+    (when .?groups
+      (when (table? .groups)
+	(if (hash-ref .groups group)
+	  (for (user (hash-ref .groups group))
+	       (whisper user channel message))
+	  (displayln "Error: group" group " not found in " .groups))))))

@@ -18,7 +18,7 @@
   '("slack"
     (static-exe: "slack"
 		 "-cc-options" "-I/usr/local/opt/leveldb/include -I/usr/local/include"
-                 "-ld-options" "-lyaml -lssl -lz -L/usr/local/lib -lleveldb"
+                 "-ld-options" "-lyaml -lz -L/usr/local/lib -lleveldb"
                  "-prelude" "(declare (not safe))")))
 
 (def srcdir
