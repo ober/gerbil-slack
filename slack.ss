@@ -20,7 +20,6 @@ namespace: slack
   :std/crypto/cipher
   :std/crypto/etc
   :std/crypto/libcrypto
-  :std/db/leveldb
   :std/error
   :std/format
   :std/generic
@@ -67,9 +66,9 @@ namespace: slack
    ("rtm-start-json" (hash (description: "Start realtime chat.") (usage: "rtm-start") (count: 0)))
    ("search" (hash (description: "Search messages for pattern.") (usage: "searchm <pattern>") (count: 1)))
    ("set-topic" (hash (description: "Set topic on channel") (usage: "set-topic <channel> <topic>") (count: 2)))
-   ("user" (hash (description: "Open chat with user") (usage: "user user") (count: 1)))
-   ("users" (hash (description: "user list.") (usage: "users") (count: 0)))
-   ("whisper" (hash (description: "Send message to user.") (usage: "whisper <username> <channel> <message>") (count: 3)))
+   ("user" (hash (description: "Describe user") (usage: "user <username>") (count: 1)))
+   ("users" (hash (description: "List All Slack Users") (usage: "users") (count: 0)))
+   ("whisper" (hash (description: "Send private message to user in channel") (usage: "whisper <username> <channel> <message>") (count: 3)))
    ))
 
 (def (dp msg)
@@ -139,16 +138,15 @@ namespace: slack
            (ims (hash-get myjson 'ims)))
       (displayln "|id|created|is_im|is_org_shared|user|is_user_deleted|priority|")
       (displayln "|--|-------|-----|-------------|----|---------------|--------|")
-      (for-each
-        (lambda (im)
-          (let-hash im
-            (displayln "|" .id
-                       "|" .created
-                       "|" .is_im
-                       "|" .is_org_shared
-                       "|" .user
-                       "|" .priority "|")))
-        ims))))
+      (for (im ims)
+           (let-hash im
+             (displayln "|" .id
+                        "|" .created
+                        "|" .is_im
+                        "|" .is_org_shared
+                        "|" .user
+                        "|" .priority "|"))))))
+
 
 (def (ghistory group)
   (let-hash (load-config)
@@ -172,22 +170,20 @@ namespace: slack
 	   (groups (hash-get myjson 'groups)))
       (displayln "|name|creator|is_group|purpose|members|created|name2|id |is_archived|is_mpim|topic|priority|")
       (displayln "|--|-------|-----|-------------|----|---------------|--------|")
-      (for-each
-	(lambda (g)
-	  (let-hash g
-	    (displayln "|" .name_normalized
-		       "|" (hash-ref .topic 'value)
-		       "|" .creator
-		       "|" .is_group
-		       "|" (hash-ref .purpose 'value)
-		       "|" .members
-		       "|" .created
-		       "|" .name
-		       "|" .id
-		       "|" .is_archived
-		       "|" .is_mpim
-		       "|" .priority "|")))
-	groups))))
+      (for (g groups)
+           (let-hash g
+             (displayln "|" .name_normalized
+                        "|" (hash-ref .topic 'value)
+                        "|" .creator
+                        "|" .is_group
+                        "|" (hash-ref .purpose 'value)
+                        "|" .members
+                        "|" .created
+                        "|" .name
+                        "|" .id
+                        "|" .is_archived
+                        "|" .is_mpim
+                        "|" .priority "|"))))))
 
 (def (post channel message from)
   (let-hash (load-config)
@@ -222,7 +218,6 @@ namespace: slack
 	(displayln (post channel message .username))
 	(displayln "Invalid user: " user)))))
 
-
 (def (delete channel timestamp)
   "Remove a message from a chat channel"
   (let-hash (load-config)
@@ -251,11 +246,11 @@ namespace: slack
                      (let-hash m
                        (set! outs (cons [ .username
                                           (format "~a:~a" (hash-get .channel 'name) (hash-get .channel 'id))
-                                           .text
-                                           .type
-                                           .user
-                                           .ts
-                                           .permalink ] outs)))))))))
+                                          .text
+                                          .type
+                                          .user
+                                          .ts
+                                          .permalink ] outs)))))))))
       (style-output outs))))
 
 (def (users)
@@ -263,30 +258,23 @@ namespace: slack
     (let* ((uri (format "https://slack.com/api/users.list?token=~a" .token))
 	   (results (do-get uri))
 	   (myjson (from-json results))
-	   (members (hash-ref myjson 'members)))
-      (print-users members))))
-
-(def (print-users users)
-  (when (list? users)
-    (for-each
-      (lambda (user)
-	(print-user user))
-      users)))
-
-(def (print-user user)
-  (when (table? user)
-    (let-hash user
-      (displayln "name: " .?name
-		 " real_name: " .?real_name
-		 " is_primary_user: " .?is_primary_owner
-		 " is_ultra_restricted: " .?is_ultra_restricted
-		 " is_restricted: " .?is_restricted
-		 " team_id: " .?team_id
-		 " updated: " .?updated
-		 " is_app_user: " .?is_app_user
-		 " profile: " (hash->list .profile)
-		 " id: " .?id
-		 " tz_label" .?tz_label))))
+	   (members (hash-ref myjson 'members))
+           (outs [[ "name" "real_name" "is_primary_owner" "is_ultra_restricted" "is_restricted" "team_id" "updated" "is_app_user" "profile" "id" "tz_label" ]]))
+      (for (user members)
+           (let-hash user
+             (set! outs (cons [
+                               .?name
+                               .?real_name
+                               .?is_primary_owner
+                               .?is_ultra_restricted
+                               .?is_restricted
+                               .?team_id
+                               .?updated
+                               .?is_app_user
+                               (hash->list .profile)
+                               .?id
+                               .?tz_label ] outs))))
+      (style-output outs))))
 
 (def (id-for-user user)
   (let-hash (load-config)
@@ -295,14 +283,11 @@ namespace: slack
 	   (myjson (from-json results))
 	   (members (hash-ref myjson 'members))
 	   (id #f))
-      (for-each
-	(lambda (u)
-    	  (let-hash u
-	    (when (string=? .name user)
-	      (set! id .id))))
-	members)
+      (for (u members)
+           (let-hash u
+             (when (string=? .name user)
+               (set! id .id))))
       id)))
-
 
 (def (main . args)
   (if (null? args)
@@ -329,10 +314,8 @@ namespace: slack
 (def (usage)
   (displayln (format "Slack: version ~a" version))
   (displayln "Verbs:")
-  (for-each
-    (lambda (k)
-      (displayln (format "~a: ~a" k (hash-get (hash-get interactives k) description:))))
-    (sort! (hash-keys interactives) string<?))
+  (for (k (sort! (hash-keys interactives) string<?))
+       (displayln (format "~a: ~a" k (hash-get (hash-get interactives k) description:))))
   (exit 2))
 
 (def (channels)
@@ -345,10 +328,8 @@ namespace: slack
 
 (def (print-channels channels)
   (when (list? channels)
-    (for-each
-      (lambda (channel)
-	(print-channel channel))
-      channels)))
+    (for (channel channels)
+         (print-channel channel))))
 
 (def (print-channel channel)
   (if (table? channel)
@@ -484,17 +465,13 @@ namespace: slack
 	(displayln "Channels: ------------------------------------------------------------")
 	(print-channels .?channels)
 	(displayln "Users: ------------------------------------------------------------")
-	(print-users .?users)
-	(for-each
-	  (lambda (user)
-	    (displayln (hash->list user)))
-	  .?users)
+	;;(print-users .?users)
+        (for (user .?users)
+             (displayln (hash->list user)))
 
 	(displayln "Bots: ------------------------------------------------------------")
-	(for-each
-	  (lambda (bot)
-	    (displayln (hash->list bot)))
-	  .?bots)
+        (for (bot .?bots)
+             (displayln (hash->list bot)))
 
 	(displayln "team: " (hash->list .?team))
 	(displayln "groups: " .?groups)
