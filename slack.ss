@@ -4,7 +4,7 @@ namespace: slack
 (export main)
 
 (declare (not optimize-dead-definitions))
-(def version "0.01")
+(def version "0.02")
 
 (import
   :gerbil/gambit
@@ -211,8 +211,9 @@ namespace: slack
 	 (results (do-post uri (default-headers) data))
 	 (myjson (from-json results)))
     (let-hash myjson
-      (let-hash .channel
-	.id))))
+      (when .?channel
+        (let-hash .channel
+          .id)))))
 
 (def (msg user message)
   (let-hash (load-config)
@@ -239,27 +240,23 @@ namespace: slack
     (let*
 	((uri (format "https://slack.com/api/search.messages?token=~a&count=~a&query=~a" .token 100 query))
 	 (results (do-get uri))
+         (outs [[ "id" "team" "channel" "type" "user" "username" "ts" "text" "permalink" ]])
 	 (myjson (from-json results)))
       (let-hash myjson
 	(if .?messages
 	  (let-hash .?messages
 	    (if .?matches
 	      (let-hash .?matches
-		;; 	 (matches (hash-get (hash-get myjson 'messages) 'matches)))
-
-		(displayln "|id|team|channel|type|user|username|ts|text|permalink|")
-		(displayln "|--|-------|-----|-------------|----|---------------|--------|")
-		(for-each
-      		  (lambda (m)
-      		    (let-hash m
-       		      (displayln "|" .username
-      	  			 "|" (format "~a:~a" (hash-get .channel 'name) (hash-get .channel 'id))
-      	  			 "|" .text
-      	  			 "|" .type
-      	  			 "|" .user
-      	  			 "|" .ts
-      	  			 "|" .permalink "|")))
-      		  ..matches)))))))))
+                (for (m ..matches)
+                     (let-hash m
+                       (set! outs (cons [ .username
+                                          (format "~a:~a" (hash-get .channel 'name) (hash-get .channel 'id))
+                                           .text
+                                           .type
+                                           .user
+                                           .ts
+                                           .permalink ] outs)))))))))
+      (style-output outs))))
 
 (def (users)
   (let-hash (load-config)
@@ -535,3 +532,62 @@ namespace: slack
 	  (for (user (hash-ref .groups group))
 	       (whisper user channel message))
 	  (displayln "Error: group" group " not found in " .groups))))))
+
+(def (style-output infos)
+  (let-hash (load-config)
+    (when (list? infos)
+      (let* ((sizes (hash))
+	     (data (reverse infos))
+	     (header (car data))
+	     (rows (cdr data)))
+	(for (head header)
+	     (unless (string? head) (displayln "head is not string: " head) (exit 2))
+	     (hash-put! sizes head (string-length head)))
+	(for (row rows)
+	     (let (count 0)
+	       (for (column row)
+		    (let* ((col-name (nth count header))
+			   (current-size (hash-ref sizes col-name))
+			   (this-size (if (string? column) (string-length column) (string-length (format "~a" column)))))
+		      (when (> this-size current-size)
+			(hash-put! sizes col-name this-size))
+                      ;;		      (displayln "colname: " col-name " col: " count " current-size: " current-size " this-size: " this-size " column: " column)
+		      (set! count (1+ count))))))
+
+	(for (head header)
+	     (display (format "| ~a" (format-string-size head (hash-get sizes head)))))
+
+	;; print header
+	(displayln "|")
+	(let ((count 0))
+	  (for (head header)
+	       (let ((sep (if (= count 0) "|" "+")))
+		 (display (format "~a~a" sep (make-string (+ 2 (hash-get sizes (nth count header))) #\-))))
+	       (set! count (1+ count))))
+	(displayln "|")
+
+	(for (row rows)
+	     (let (count 0)
+	       (for (col row)
+		    (display (format "|~a " (format-string-size col (hash-ref sizes (nth count header)))))
+		    (set! count (1+ count))))
+	     (displayln "|"))
+	))))
+
+(def (nth n l)
+  "Implement nth for gerbil. fetch n argument from list"
+  (if (or (> n (length l)) (< n 0))
+    (error "Index out of bounds.")
+    (if (eq? n 0)
+      (car l)
+      (nth (- n 1) (cdr l)))))
+
+(def (format-string-size string size)
+  (unless (string? string)
+    (set! string (format "~a" string)))
+  (let* ((string (string-trim-both string))
+	 (our-size (string-length string))
+	 (delta (if (> size our-size)
+		  (- size our-size)
+		  0)))
+    (format " ~a~a" string (make-string delta #\space))))
