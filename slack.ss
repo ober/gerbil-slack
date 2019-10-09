@@ -27,6 +27,7 @@ namespace: slack
   :std/iter
   :std/logger
   :std/misc/completion
+  :std/misc/list
   :std/misc/threads
   :std/net/request
   :std/net/websocket
