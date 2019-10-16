@@ -38,6 +38,8 @@
   :ober/oberlib
   :ober/slack/client)
 
+(export main)
+
 (def interactives
   (hash
    ("channel-history" (hash (description: "Channel list.") (usage: "channel-history <channel id>") (count: 1)))
