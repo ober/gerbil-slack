@@ -82,7 +82,7 @@
         (set! count 0))
       (unless (= (length args2) count)
         (usage-verb verb))
-      (apply (eval (string->symbol (string-append "ober/slack#" verb))) args2))))
+      (apply (eval (string->symbol (string-append "ober/slack/client#" verb))) args2))))
 
 (def (usage-verb verb)
   (let ((howto (hash-get interactives verb)))
