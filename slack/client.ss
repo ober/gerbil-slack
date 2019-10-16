@@ -1,11 +1,4 @@
 ;; -*- Gerbil -*-
-package: slack
-namespace: slack
-
-(export main)
-
-(declare (not optimize-dead-definitions))
-(def version "0.02")
 
 (import
   :gerbil/gambit
@@ -39,102 +32,18 @@ namespace: slack
   :std/text/base64
   :std/text/json
   :std/text/utf8
-  :std/text/yaml)
+  :std/text/yaml
+  :ober/oberlib)
+
+(export #t)
+(declare (not optimize-dead-definitions))
+(def version "0.02")
 
 (def program-name "slack")
 (def config-file "~/.slack.yaml")
 
 (def user-list (hash))
 (def channel-list (hash))
-
-(def DEBUG (getenv "DEBUG" #f))
-
-(def interactives
-  (hash
-   ("channel-history" (hash (description: "Channel list.") (usage: "channel-history <channel id>") (count: 1)))
-   ("channels" (hash (description: "Channel list.") (usage: "channels") (count: 0)))
-   ("chats" (hash (description: "Chat list.") (usage: "chats") (count: 0)))
-   ("config" (hash (description: "Set your encrypted password.") (usage: "config") (count: 0)))
-   ("delete" (hash (description: "Delete a message.") (usage: "delete <channel> <timestamp>") (count: 2)))
-   ("emojis" (hash (description: "Channel list.") (usage: "channels") (count: 0)))
-   ("ghistory" (hash (description: "Group history.") (usage: "ghistory <group>") (count: 1)))
-   ("groups" (hash (description: "Group list.") (usage: "groups") (count: 0)))
-   ("gul" (hash (description: "Channel list.") (usage: "channels") (count: 0)))
-   ("gw" (hash (description: "Send message to user.") (usage: "gw <group> <channel> <message>") (count: 3)))
-   ("im-history" (hash (description: "IM History.") (usage: "im-history <name of user>") (count: 1)))
-   ("im-open" (hash (description: "Open chat with user") (usage: "chat-open user") (count: 1)))
-   ("list-records" (hash (description: "list records.") (usage: "list-records") (count: 0)))
-   ("msg" (hash (description: "Send message to user.") (usage: "msg <username> <message>") (count: 2)))
-   ("post" (hash (description: "Post IM message to channel.") (usage: "post <channel> <message> <from>") (count: 3)))
-   ("rtm-start" (hash (description: "Start realtime chat.") (usage: "rtm-start") (count: 0)))
-   ("rtm-start-json" (hash (description: "Start realtime chat.") (usage: "rtm-start") (count: 0)))
-   ("search" (hash (description: "Search messages for pattern.") (usage: "searchm <pattern>") (count: 1)))
-   ("set-topic" (hash (description: "Set topic on channel") (usage: "set-topic <channel> <topic>") (count: 2)))
-   ("user" (hash (description: "Describe user") (usage: "user <username>") (count: 1)))
-   ("users" (hash (description: "List All Slack Users") (usage: "users") (count: 0)))
-   ("whisper" (hash (description: "Send private message to user in channel") (usage: "whisper <username> <channel> <message>") (count: 3)))
-   ))
-
-(def (dp msg)
-  (when DEBUG
-    (displayln msg)))
-
-(def (success? status)
-  (and (>= status 200) (<= status 299)))
-
-(def (float->int num)
-  (inexact->exact
-   (round num)))
-
-(def (epoch->date epoch)
-  (cond
-   ((string? epoch)
-    (time-utc->date (make-time time-utc 0 (string->number epoch))))
-   ((flonum? epoch)
-    (time-utc->date (make-time time-utc 0 (float->int epoch))))
-   ((fixnum? epoch)
-    (time-utc->date (make-time time-utc 0 epoch)))))
-
-(def (date->epoch mydate)
-  (string->number (date->string (string->date mydate "~Y-~m-~d ~H:~M:~S") "~s")))
-
-(def (print-date date)
-  (date->string date "~c"))
-
-(def (do-post uri headers data)
-  (dp (print-curl "post" uri headers data))
-  (let* ((reply (http-post uri
-                           headers: headers
-                           data: data))
-         (status (request-status reply))
-         (text (request-text reply)))
-
-    (if (success? status)
-      text
-      (format "Failure on post. Status:~a Text:~a~%" status text))))
-
-(def (do-get uri)
-  (let* ((reply (http-get uri))
-         (status (request-status reply))
-         (text (request-text reply)))
-    (if (success? status)
-      text
-      (displayln (format "Error: got ~a on request. text: ~a~%" status text)))))
-
-(def (from-json json)
-  (with-input-from-string json read-json))
-
-(def (hash->str h)
-  (let ((results []))
-    (if (table? h)
-      (begin
-        (hash-for-each
-         (lambda (k v)
-           (set! results (cons  [ (format " ~a->" k) (format "~a   " v)]   results)))
-         h)
-        (append-strings results))
-      ;;        (pregexp-replace "\n" (append-strings results) "\t"))
-      "N/A")))
 
 (def (get-chat-list)
   (let-hash (load-config)
@@ -336,35 +245,6 @@ namespace: slack
                (set! id .id)))))
     id))
 
-(def (main . args)
-  (if (null? args)
-    (usage))
-  (let* ((argc (length args))
-         (verb (car args))
-         (args2 (cdr args)))
-    (unless (hash-key? interactives verb)
-      (usage))
-    (let* ((info (hash-get interactives verb))
-           (count (hash-get info count:)))
-      (unless count
-        (set! count 0))
-      (unless (= (length args2) count)
-        (usage-verb verb))
-      (apply (eval (string->symbol (string-append "slack#" verb))) args2))))
-
-(def (usage-verb verb)
-  (let ((howto (hash-get interactives verb)))
-    (displayln "Wrong number of arguments. Usage is:")
-    (displayln program-name " " (hash-get howto usage:))
-    (exit 2)))
-
-(def (usage)
-  (displayln (format "Slack: version ~a" version))
-  (displayln "Verbs:")
-  (for (k (sort! (hash-keys interactives) string<?))
-       (displayln (format "~a: ~a" k (hash-get (hash-get interactives k) description:))))
-  (exit 2))
-
 (def (get-channel-list)
   (let-hash (load-config)
     (let* ((uri (format "https://slack.com/api/channels.list?token=~a" .token))
@@ -466,22 +346,6 @@ namespace: slack
 	 (results (do-post uri (default-headers) data)))
     (displayln results)))
 
-(def (print-curl type uri headers data)
-  (let ((heads "Content-type: application/json")
-	(do-curl (getenv "DEBUG" #f)))
-    (when do-curl
-      (cond
-       ((string=? type "get")
-	(if (string=? "" data)
-	  (displayln (format "curl -X GET -H \'~a\' ~a" heads uri))
-	  (displayln (format "curl -X GET -H \'~a\' -d \'~a\' ~a" heads data uri))))
-       ((string=? type "put")
-	(displayln (format "curl -X PUT -H \'~a\' -d \'~a\' ~a" heads data uri)))
-       ((string=? type "post")
-	(displayln (format "curl -X POST -H \'~a\' -d \'~a\' ~a" headers data uri)))
-       (else
-	(displayln "unknown format " type))))))
-
 (def (load-config)
   (let ((config (hash))
         (config-data (yaml-load config-file)))
@@ -554,11 +418,6 @@ namespace: slack
 (def (list-records)
   (displayln "records here"))
 
-(def (def-num num)
-  (if (string? num)
-    (string->number num)
-    num))
-
 (def (rtm-start-json)
   (let-hash (load-config)
     (let* ((uri (format "https://slack.com/api/rtm.start?token=~a" .token))
@@ -623,67 +482,3 @@ namespace: slack
 	  (for (user (hash-ref .groups group))
 	       (whisper user channel message))
 	  (displayln "Error: group" group " not found in " .groups))))))
-
-(def (style-output infos)
-  (let-hash (load-config)
-    (when (list? infos)
-      (let* ((sizes (hash))
-	     (data (reverse infos))
-	     (header (car data))
-	     (rows (cdr data)))
-	(for (head header)
-	     (unless (string? head) (displayln "head is not string: " head) (exit 2))
-	     (hash-put! sizes head (string-length head)))
-	(for (row rows)
-	     (let (count 0)
-	       (for (column row)
-		    (let* ((col-name (nth count header))
-			   (current-size (hash-ref sizes col-name))
-			   (this-size (if (string? column) (string-length column) (string-length (format "~a" column)))))
-		      (when (> this-size current-size)
-			(hash-put! sizes col-name this-size))
-                      ;;		      (displayln "colname: " col-name " col: " count " current-size: " current-size " this-size: " this-size " column: " column)
-		      (set! count (1+ count))))))
-
-	(for (head header)
-	     (display (format "| ~a" (format-string-size head (hash-get sizes head)))))
-
-	;; print header
-	(displayln "|")
-	(let ((count 0))
-	  (for (head header)
-	       (let ((sep (if (= count 0) "|" "+")))
-		 (display (format "~a~a" sep (make-string (+ 2 (hash-get sizes (nth count header))) #\-))))
-	       (set! count (1+ count))))
-	(displayln "|")
-
-	(for (row rows)
-	     (let (count 0)
-	       (for (col row)
-		    (display (format "|~a " (format-string-size col (hash-ref sizes (nth count header)))))
-		    (set! count (1+ count))))
-	     (displayln "|"))
-	))))
-
-(def (nth n l)
-  "Implement nth for gerbil. fetch n argument from list"
-  (if (or (> n (length l)) (< n 0))
-    (error "Index out of bounds.")
-    (if (eq? n 0)
-      (car l)
-      (nth (- n 1) (cdr l)))))
-
-(def (format-string-size string size)
-  (unless (string? string)
-    (set! string (format "~a" string)))
-  (let* ((string (string-trim-both string))
-	 (our-size (string-length string))
-	 (delta (if (> size our-size)
-		  (- size our-size)
-		  0)))
-    (format " ~a~a" string (make-string delta #\space))))
-
-(def (sis item)
-  (if item
-    item
-    "N/A"))
