@@ -38,6 +38,8 @@
   :ober/oberlib
   :ober/slack/client)
 
+(declare (not optimize-dead-definitions))
+
 (export main)
 
 (def interactives

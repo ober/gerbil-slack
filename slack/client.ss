@@ -54,7 +54,6 @@
            (ims (hash-get myjson 'ims)))
       ims)))
 
-
 (def (chats)
   (let ((chats (get-chat-list))
         (outs [[ "user" "id" "user-id" "priority" "is_user_deleted" "is_archived" "is_im" "created" "is_org_shared" ]]))
@@ -142,7 +141,6 @@
       (if channel
 	(displayln (post channel message .username))
 	(displayln "Invalid user: " user)))))
-
 
 (def (emojis)
   (let-hash (load-config)
