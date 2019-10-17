@@ -24,7 +24,7 @@ endif
 slack: $(eval CPPFLAGS := "-I$(SSL-BASE)include -I$(LIBYAML-BASE)include -I/usr/local/include")
 slack: $(eval LDFLAGS := "-L$(SSL-BASE)lib -L$(LIBYAML-BASE)lib -lz -lssl -lyaml -L/usr/local/lib")
 slack:
-	gxc -O -o dda -static -exe -g -genv -cc-options $(CPPFLAGS) -ld-options $(LDFLAGS) -gsrc -gsc-flag -keep-c slack/dda.ss
+	gxc -O -o sla -static -exe -g -genv -cc-options $(CPPFLAGS) -ld-options $(LDFLAGS) -gsrc -gsc-flag -keep-c slack/sla.ss
 
 linux-static:
 	docker run -e GERBIL_PATH=/dd/.gerbil -e PATH='/root/gerbil/bin:/usr/local/gambit/current/bin:/bin:/usr/bin:/sbin:/usr/sbin' -v $(PWD):/dd -it jaimef/centos bash -c 'cd /dd && make linux-static-intern'
