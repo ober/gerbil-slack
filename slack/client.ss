@@ -7,7 +7,6 @@
   :gerbil/gambit/os
   :gerbil/gambit/ports
   :gerbil/gambit/threads
-  :scheme/base
   :std/actor/message
   :std/actor/proto
   :std/coroutine
