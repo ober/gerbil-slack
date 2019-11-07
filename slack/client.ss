@@ -351,6 +351,26 @@
                  (table? (car config-data)))
       (displayln (format "Could not parse your config ~a" config-file))
       (exit 2))
+    (hash-for-each
+     (lambda (k v)
+       (hash-put! config (string->symbol k) v))
+     (car config-data))
+    (let-hash config
+      (hash-put! config 'style (or .?style "org-mode"))
+      (when .?secrets
+	(let-hash (u8vector->object (base64-decode .secrets))
+	  (let ((password (get-password-from-config .key .iv .password)))
+            (hash-put! config 'token password)
+	    config))))))
+
+(def (load-config-old)
+  (let ((config (hash))
+        (config-data (yaml-load config-file)))
+    (unless (and (list? config-data)
+                 (length>n? config-data 0)
+                 (table? (car config-data)))
+      (displayln (format "Could not parse your config ~a" config-file))
+      (exit 2))
 
     (hash-for-each
      (lambda (k v)
@@ -388,21 +408,23 @@
 
 (def (config)
   (let-hash (load-config)
-    (displayln "Please enter your slack token")
-    (let* ((password (read-line (current-input-port)))
+    (displayln "Please enter your slack token: ")
+    (let* ((password (read-password ##console-port))
 	   (cipher (make-aes-256-ctr-cipher))
 	   (iv (random-bytes (cipher-iv-length cipher)))
 	   (key (random-bytes (cipher-key-length cipher)))
 	   (encrypted-password (encrypt cipher key iv password))
 	   (enc-pass-store (u8vector->base64-string encrypted-password))
 	   (iv-store (u8vector->base64-string iv))
-	   (key-store (u8vector->base64-string key)))
-      (displayln "Add the following lines to your " config-file)
-      (displayln "-----------------------------------------")
-      (displayln "password: " enc-pass-store)
-      (displayln "iv: " iv-store)
-      (displayln "key: " key-store)
-      (displayln "-----------------------------------------"))))
+	   (key-store (u8vector->base64-string key))
+           (secrets (base64-encode (object->u8vector
+                                    (hash
+                                     (password enc-pass-store)
+                                     (iv iv-store)
+                                     (key key-store))))))
+      (displayln "Add the following secrets line to your " config-file)
+      (displayln "")
+      (displayln "secrets: " secrets))))
 
 (def (get-password-from-config key iv password)
   (bytes->string
