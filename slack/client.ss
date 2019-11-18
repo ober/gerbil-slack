@@ -163,11 +163,10 @@
 
 (def (search query)
   (let-hash (load-config)
-    (let*
-	((uri (format "https://slack.com/api/search.messages?token=~a&count=~a&query=~a" .token 100 query))
-	 (results (do-get uri))
-         (outs [[ "id" "channel" "Message" "channel-id" "ts" "type" "user" "permalink" ]])
-	 (myjson (from-json results)))
+    (let* ((uri (format "https://slack.com/api/search.messages?token=~a&count=~a&query=~a" .token 100 query))
+           (results (do-get uri))
+           (outs [[ "id" "channel" "Message" "channel-id" "ts" "type" "user" "permalink" ]])
+           (myjson (from-json results)))
       (let-hash myjson
 	(if .?messages
 	  (let-hash .?messages
@@ -191,7 +190,7 @@
   (let-hash (load-config)
     (let* ((uri (format "https://slack.com/api/users.list?token=~a" .token))
 	   (results (do-get uri)))
-           (displayln results))))
+      (displayln results))))
 
 (def (get-user-list)
   (let-hash (load-config)
@@ -356,6 +355,8 @@
        (hash-put! config (string->symbol k) v))
      (car config-data))
     (let-hash config
+      (when (and .?key .?iv .?password)
+        (hash-put! config 'token (get-password-from-config .key .iv .password)))
       (hash-put! config 'style (or .?style "org-mode"))
       (when .?secrets
 	(let-hash (u8vector->object (base64-decode .secrets))
