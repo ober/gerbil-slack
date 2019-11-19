@@ -350,10 +350,12 @@
                  (table? (car config-data)))
       (displayln (format "Could not parse your config ~a" config-file))
       (exit 2))
+
     (hash-for-each
      (lambda (k v)
        (hash-put! config (string->symbol k) v))
      (car config-data))
+
     (let-hash config
       (when (and .?key .?iv .?password)
         (hash-put! config 'token (get-password-from-config .key .iv .password)))
@@ -380,6 +382,7 @@
 
     (let-hash config
       (when (and .?key .?iv .?password)
+        (displayln "token is " (get-password-from-config .key .iv .password))
 	(hash-put! config 'token (get-password-from-config .key .iv .password)))
       config)))
 
