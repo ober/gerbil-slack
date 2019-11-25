@@ -43,6 +43,8 @@
 
 (def interactives
   (hash
+   ("active" (hash (description: "Set your status to Away.") (usage: "away") (count: 0)))
+   ("away" (hash (description: "Set your status to Away.") (usage: "away") (count: 0)))
    ("channel-history" (hash (description: "Channel list.") (usage: "channel-history <channel id>") (count: 1)))
    ("channels" (hash (description: "Channel list.") (usage: "channels") (count: 0)))
    ("chats" (hash (description: "Chat list.") (usage: "chats") (count: 0)))
@@ -58,6 +60,7 @@
    ("list-records" (hash (description: "list records.") (usage: "list-records") (count: 0)))
    ("msg" (hash (description: "Send message to user.") (usage: "msg <username> <message>") (count: 2)))
    ("post" (hash (description: "Post IM message to channel.") (usage: "post <channel> <message> <from>") (count: 3)))
+   ("presence" (hash (description: "get status of user Away/Active.") (usage: "presnece <username>") (count: 1)))
    ("rtm-start" (hash (description: "Start realtime chat.") (usage: "rtm-start") (count: 0)))
    ("rtm-start-json" (hash (description: "Start realtime chat.") (usage: "rtm-start") (count: 0)))
    ("search" (hash (description: "Search messages for pattern.") (usage: "searchm <pattern>") (count: 1)))

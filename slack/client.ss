@@ -36,7 +36,7 @@
 
 (export #t)
 (declare (not optimize-dead-definitions))
-(def version "0.04")
+(def version "0.05")
 
 (def program-name "slack")
 (def config-file "~/.slack.yaml")
@@ -505,3 +505,33 @@
 	  (for (user (hash-ref .groups group))
 	       (whisper user channel message))
 	  (displayln "Error: group" group " not found in " .groups))))))
+
+(def (set-presence status)
+  "Set your status to Active, or Away"
+  (unless (or (string=? status "active")
+              (string=? status "away"))
+    (displayln "Error: only away, or active is allowed for status")
+    (exit 2))
+  (let-hash (load-config)
+    (let* ((uri "https://slack.com/api/users.setPresence")
+           (data (json-object->string (hash ("presence" status))))
+           (results (do-post uri (default-headers) data)))
+      (displayln results))))
+
+(def (presence user)
+  "Get the presence status. away, or active of a user"
+  (let-hash (load-config)
+    (let* ((id (id-for-user user))
+           (uri (format "https://slack.com/api/users.getPresence?user=~a&token=~a" id .token))
+           (results (do-get uri))
+           (status (from-json results)))
+      (let-hash status
+        (displayln (format "~a is currently ~a" user .presence))))))
+
+(def (away)
+  "Set status away"
+  (set-presence "away"))
+
+(def (active)
+  "Set status active"
+  (set-presence "active"))
