@@ -35,7 +35,8 @@
   :ober/oberlib)
 
 (export #t)
-(declare (not optimize-dead-definitions))
+(declare (not optimize-dead-definitions ober/slack/client#search ober/slack/client#active ober/slack/client#away ober/slack/client#channel-history ober/slack/client#channels ober/slack/client#chats ober/slack/client#config ober/slack/client#delete ober/slack/client#emojis ober/slack/client#ghistory ober/slack/client#groups ober/slack/client#gul ober/slack/client#gw ober/slack/client#im-history ober/slack/client#im-open ober/slack/client#list-records ober/slack/client#msg ober/slack/client#post ober/slack/client#presence ober/slack/client#rtm-start ober/slack/client#rtm-start-json ober/slack/client#search ober/slack/client#set-topic ober/slack/client#user ober/slack/client#users ober/slack/client#whisper))
+
 (def version "0.05")
 
 (def program-name "slack")
@@ -73,10 +74,21 @@
 
 (def (ghistory group)
   (let-hash (load-config)
-    (let* ((uri (format "https://slack.com/api/groups.history?token=~a&channel=~a&count=~a" .token group 2000))
-           (results (do-get uri))
-           (myjson (from-json results)))
-      (displayln results))))
+            (let* ((users-hash (users-hash))
+                   (uri (format "https://slack.com/api/groups.history?token=~a&channel=~a&count=~a" .token group 2000))
+                   (results (do-get uri))
+                   (myjson (from-json results))
+                   (outs [[ "User" "Message" "ts" "team" ]]))
+
+              (let-hash myjson
+                        (for (message .messages)
+                             (dp (table->list message))
+                             (let-hash message
+                                       (set! outs (cons [ (user-from-id .?user users-hash)
+                                                          .?text
+                                                          .?ts
+                                                          .?team ] outs)))))
+              (style-output outs))))
 
 (def (user user)
   (let-hash (load-config)
