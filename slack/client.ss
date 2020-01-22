@@ -58,37 +58,37 @@
   (let ((chats (get-chat-list))
         (outs [[ "user" "id" "user-id" "priority" "is_user_deleted" "is_archived" "is_im" "created" "is_org_shared" ]]))
     (for (chat chats)
-         (let-hash chat
-           (set! outs (cons [
-                             (id-for-user .?user)
-                             .?id
-                             .?user
-                             .?priority
-                             .?is_user_deleted
-                             .?is_archived
-                             .?is_im
-                             .?created
-                             .?is_org_shared
-                             ] outs))))
+      (let-hash chat
+        (set! outs (cons [
+                          (id-for-user .?user)
+                          .?id
+                          .?user
+                          .?priority
+                          .?is_user_deleted
+                          .?is_archived
+                          .?is_im
+                          .?created
+                          .?is_org_shared
+                          ] outs))))
     (style-output outs)))
 
 (def (ghistory group)
   (let-hash (load-config)
-            (let* ((users-hash (users-hash))
-                   (uri (format "https://slack.com/api/groups.history?token=~a&channel=~a&count=~a" .token group 2000))
-                   (results (do-get uri))
-                   (myjson (from-json results))
-                   (outs [[ "User" "Message" "ts" "team" ]]))
+    (let* ((users-hash (users-hash))
+           (uri (format "https://slack.com/api/groups.history?token=~a&channel=~a&count=~a" .token group 2000))
+           (results (do-get uri))
+           (myjson (from-json results))
+           (outs [[ "User" "Message" "ts" "team" ]]))
 
-              (let-hash myjson
-                        (for (message .messages)
-                             (dp (table->list message))
-                             (let-hash message
-                                       (set! outs (cons [ (user-from-id .?user users-hash)
-                                                          .?text
-                                                          .?ts
-                                                          .?team ] outs)))))
-              (style-output outs))))
+      (let-hash myjson
+        (for (message .messages)
+          (dp (table->list message))
+          (let-hash message
+            (set! outs (cons [ (user-from-id .?user users-hash)
+                               .?text
+                               .?ts
+                               .?team ] outs)))))
+      (style-output outs))))
 
 (def (user user)
   (let-hash (load-config)
@@ -106,19 +106,19 @@
       (displayln "|name|creator|is_group|purpose|members|created|name2|id |is_archived|is_mpim|topic|priority|")
       (displayln "|--|-------|-----|-------------|----|---------------|--------|")
       (for (g groups)
-           (let-hash g
-             (displayln "|" .name_normalized
-                        "|" (hash-ref .topic 'value)
-                        "|" .creator
-                        "|" .is_group
-                        "|" (hash-ref .purpose 'value)
-                        "|" .members
-                        "|" .created
-                        "|" .name
-                        "|" .id
-                        "|" .is_archived
-                        "|" .is_mpim
-                        "|" .priority "|"))))))
+        (let-hash g
+          (displayln "|" .name_normalized
+                     "|" (hash-ref .topic 'value)
+                     "|" .creator
+                     "|" .is_group
+                     "|" (hash-ref .purpose 'value)
+                     "|" .members
+                     "|" .created
+                     "|" .name
+                     "|" .id
+                     "|" .is_archived
+                     "|" .is_mpim
+                     "|" .priority "|"))))))
 
 (def (post channel message from)
   (let-hash (load-config)
@@ -149,7 +149,6 @@
 (def (get-if-set-b64 var alt)
   "Return the value of an env var if it is set, decoded from b64, else return alt"
   (let ((val (getenv var)))
-    (displayln "val is " val)
     (if val
       (bytes->string (base64-decode val))
       alt)))
@@ -194,18 +193,16 @@
 	    (if .?matches
 	      (let-hash .?matches
                 (for (m ..matches)
-                     (let-hash m
-                       (set! outs (cons [ .username
-                                          (hash-get .channel 'name)
-                                          .text
-                                          (hash-get .channel 'id)
-                                          .ts
-                                          .type
-                                          .user
-                                          .permalink ] outs)))))))))
+                  (let-hash m
+                    (set! outs (cons [ .username
+                                       (hash-get .channel 'name)
+                                       .text
+                                       (hash-get .channel 'id)
+                                       .ts
+                                       .type
+                                       .user
+                                       .permalink ] outs)))))))))
       (style-output outs))))
-
-
 
 (def (gul)
   (let-hash (load-config)
@@ -225,19 +222,19 @@
   (let* ((members (get-user-list))
          (outs [[ "name" "real_name" "is_primary_owner" "is_ultra_restricted" "is_restricted" "team_id" "updated" "is_app_user" "profile" "id" "tz_label" ]]))
     (for (user members)
-         (let-hash user
-           (set! outs (cons [
-                             .?name
-                             .?real_name
-                             .?is_primary_owner
-                             .?is_ultra_restricted
-                             .?is_restricted
-                             .?team_id
-                             .?updated
-                             .?is_app_user
-                             (hash->list .profile)
-                             .?id
-                             .?tz_label ] outs))))
+      (let-hash user
+        (set! outs (cons [
+                          .?name
+                          .?real_name
+                          .?is_primary_owner
+                          .?is_ultra_restricted
+                          .?is_restricted
+                          .?team_id
+                          .?updated
+                          .?is_app_user
+                          (hash->list .profile)
+                          .?id
+                          .?tz_label ] outs))))
     (style-output outs)))
 
 (def (id-for-user user)
@@ -248,18 +245,18 @@
            (members (hash-ref myjson 'members))
            (id #f))
       (for (u members)
-           (let-hash u
-             (when (string=? .name user)
-               (set! id .id))))
+        (let-hash u
+          (when (string=? .name user)
+            (set! id .id))))
       id)))
 
 (def (id-for-channel channel)
   (let ((id #f))
     (let-hash (get-channel-list)
       (for (c .channels)
-           (let-hash c
-             (when (string=? .name channel)
-               (set! id .id)))))
+        (let-hash c
+          (when (string=? .name channel)
+            (set! id .id)))))
     id))
 
 (def (get-channel-list)
@@ -278,8 +275,8 @@
   (let ((users (hash))
         (members (get-user-list)))
     (for (member members)
-         (let-hash member
-           (hash-put! users (string->symbol .id) .name)))
+      (let-hash member
+        (hash-put! users (string->symbol .id) .name)))
     users))
 
 (def (user-from-id id users-hash)
@@ -298,14 +295,14 @@
            (myjson (from-json results)))
       (let-hash myjson
         (for (message .messages)
-             (dp (table->list message))
-             (let-hash message
-               (set! outs (cons [ (user-from-id .?user users-hash)
-                                  user
-                                  .?text
-                                  id
-                                  .?ts
-                                  .?team ] outs)))))
+          (dp (table->list message))
+          (let-hash message
+            (set! outs (cons [ (user-from-id .?user users-hash)
+                               user
+                               .?text
+                               id
+                               .?ts
+                               .?team ] outs)))))
       (style-output outs))))
 
 (def (channel-history channel)
@@ -319,20 +316,20 @@
            (myjson (from-json results)))
       (let-hash myjson
         (for (message .messages)
-             (dp (table->list message))
-             (let-hash message
-               (set! outs (cons [ (user-from-id .?user users-hash)
-                                  channel
-                                  .?text
-                                  id
-                                  .?ts
-                                  .?team ] outs)))))
+          (dp (table->list message))
+          (let-hash message
+            (set! outs (cons [ (user-from-id .?user users-hash)
+                               channel
+                               .?text
+                               id
+                               .?ts
+                               .?team ] outs)))))
       (style-output outs))))
 
 (def (print-channels channels)
   (when (list? channels)
     (for (channel channels)
-         (print-channel channel))))
+      (print-channel channel))))
 
 (def (print-channel channel)
   (if (table? channel)
@@ -484,11 +481,11 @@
 	(displayln "Users: ------------------------------------------------------------")
 	;;(print-users .?users)
         (for (user .?users)
-             (displayln (hash->list user)))
+          (displayln (hash->list user)))
 
 	(displayln "Bots: ------------------------------------------------------------")
         (for (bot .?bots)
-             (displayln (hash->list bot)))
+          (displayln (hash->list bot)))
 
 	(displayln "team: " (hash->list .?team))
 	(displayln "groups: " .?groups)
@@ -524,7 +521,7 @@
       (when (table? .groups)
 	(if (hash-ref .groups group)
 	  (for (user (hash-ref .groups group))
-	       (whisper user channel message))
+            (whisper user channel message))
 	  (displayln "Error: group" group " not found in " .groups))))))
 
 (def (set-presence status)
