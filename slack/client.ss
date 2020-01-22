@@ -146,11 +146,20 @@
         (let-hash .channel
           .id)))))
 
+(def (get-if-set-b64 var alt)
+  "Return the value of an env var if it is set, decoded from b64, else return alt"
+  (let ((val (getenv var)))
+    (displayln "val is " val)
+    (if val
+      (bytes->string (base64-decode val))
+      alt)))
+
 (def (msg user message)
   (let-hash (load-config)
-    (let ((channel (im-open user)))
+    (let ((channel (im-open user))
+          (msg (get-if-set-b64 "slackmsg" message)))
       (if channel
-	(displayln (post channel message .username))
+	(displayln (post channel msg .username))
 	(displayln "Invalid user: " user)))))
 
 (def (emojis)
