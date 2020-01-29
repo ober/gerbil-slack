@@ -35,7 +35,7 @@
   :ober/oberlib)
 
 (export #t)
-(declare (not optimize-dead-definitions ober/slack/client#search ober/slack/client#active ober/slack/client#away ober/slack/client#channel-history ober/slack/client#channels ober/slack/client#chats ober/slack/client#config ober/slack/client#delete ober/slack/client#emojis ober/slack/client#ghistory ober/slack/client#groups ober/slack/client#gul ober/slack/client#gw ober/slack/client#im-history ober/slack/client#im-open ober/slack/client#list-records ober/slack/client#msg ober/slack/client#post ober/slack/client#presence ober/slack/client#rtm-start ober/slack/client#rtm-start-json ober/slack/client#search ober/slack/client#set-topic ober/slack/client#user ober/slack/client#users ober/slack/client#whisper))
+(declare (not optimize-dead-definitions))
 
 (def version "0.05")
 
@@ -123,11 +123,12 @@
 (def (post channel message from)
   (let-hash (load-config)
     (let* ((uri "https://slack.com/api/chat.postMessage")
+           (msg (get-if-set-b64 "slackmsg" message))
 	   (data (json-object->string
 		  (hash
 		   ("as_user" #t)
 		   ("username" from)
-		   ("text" message)
+		   ("text" msg)
 		   ("channel" channel))))
 	   (results (do-post uri (default-headers) data)))
       (displayln results))))
