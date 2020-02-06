@@ -1,4 +1,6 @@
 ;; -*- Gerbil -*-
+;; ©ober 2020
+;; slack client library
 
 (import
   :gerbil/gambit
@@ -181,10 +183,10 @@
 		   ("as_user" #t)
 		   ("ts" timestamp)
 		   ("channel" channel))))
-    (with ([status body] (rest-call 'post url (default-headers) data))
-      (unless status
-        (error body))
-      (present-item body))))))
+           (with ([status body] (rest-call 'post url (default-headers) data))
+             (unless status
+               (error body))
+             (present-item body))))))
 
 (def (search query)
   (let-hash (load-config)
@@ -208,8 +210,8 @@
                                            .ts
                                            .type
                                            .user
-                                           .permalink ] outs)))))))))
-          (style-output outs)))))
+                                           .permalink ] outs)))))))))))
+      (style-output outs))))
 
 (def (gul)
   (let-hash (load-config)
@@ -263,7 +265,7 @@
                 (let-hash u
                   (when (string=? .name user)
                     (set! id .id))))))))
-              id)))
+      id)))
 
 (def (id-for-channel channel)
   (let ((id #f))
@@ -320,7 +322,7 @@
                                    id
                                    .?ts
                                    .?team ] outs)))))))
-          (style-output outs))))
+      (style-output outs))))
 
 (def (channel-history channel)
   (let-hash (load-config)
@@ -371,10 +373,10 @@
 
 (def (set-topic channel topic)
   (let* ((uri "https://slack.com/api/channels.setTopic")
-	 (data (json-object->string
-		(hash
-		 ("topic" topic)
-		 ("channel" channel)))))
+         (data (json-object->string
+                (hash
+                 ("topic" topic)
+                 ("channel" channel)))))
     (with ([status body] (rest-call 'post url (default-headers) data))
       (unless status
         (error body))
@@ -401,10 +403,10 @@
         (hash-put! config 'token (get-password-from-config .key .iv .password)))
       (hash-put! config 'style (or .?style "org-mode"))
       (when .?secrets
-	(let-hash (u8vector->object (base64-decode .secrets))
-	  (let ((password (get-password-from-config .key .iv .password)))
+        (let-hash (u8vector->object (base64-decode .secrets))
+          (let ((password (get-password-from-config .key .iv .password)))
             (hash-put! config 'token password)
-	    config))))))
+            config))))))
 
 (def (load-config-old)
   (let ((config (hash))
@@ -423,7 +425,7 @@
     (let-hash config
       (when (and .?key .?iv .?password)
         (displayln "token is " (get-password-from-config .key .iv .password))
-	(hash-put! config 'token (get-password-from-config .key .iv .password)))
+        (hash-put! config 'token (get-password-from-config .key .iv .password)))
       config)))
 
 (def (default-headers)
@@ -437,16 +439,16 @@
 (def (whisper user channel msg)
   (let-hash (load-config)
     (let* ((uri "https://slack.com/api/chat.postEphemeral")
-	   (data (json-object->string
-		  (hash
-		   ("as_user" #t)
-		   ("attachments" #f)
-		   ("channel" channel)
-		   ("id" (im-open user))
-		   ("link_names" #t)
-		   ("parse" "none")
-		   ("user" (id-for-user user))
-		   ("text" msg)))))
+           (data (json-object->string
+                  (hash
+                   ("as_user" #t)
+                   ("attachments" #f)
+                   ("channel" channel)
+                   ("id" (im-open user))
+                   ("link_names" #t)
+                   ("parse" "none")
+                   ("user" (id-for-user user))
+                   ("text" msg)))))
       (with ([ status body ] (rest-call 'post url (default-headers) data))
         (unless status
           (error body))
@@ -456,13 +458,13 @@
   (let-hash (load-config)
     (displayln "Please enter your slack token: ")
     (let* ((password (read-password ##console-port))
-	   (cipher (make-aes-256-ctr-cipher))
-	   (iv (random-bytes (cipher-iv-length cipher)))
-	   (key (random-bytes (cipher-key-length cipher)))
-	   (encrypted-password (encrypt cipher key iv password))
-	   (enc-pass-store (u8vector->base64-string encrypted-password))
-	   (iv-store (u8vector->base64-string iv))
-	   (key-store (u8vector->base64-string key))
+           (cipher (make-aes-256-ctr-cipher))
+           (iv (random-bytes (cipher-iv-length cipher)))
+           (key (random-bytes (cipher-key-length cipher)))
+           (encrypted-password (encrypt cipher key iv password))
+           (enc-pass-store (u8vector->base64-string encrypted-password))
+           (iv-store (u8vector->base64-string iv))
+           (key-store (u8vector->base64-string key))
            (secrets (base64-encode (object->u8vector
                                     (hash
                                      (password enc-pass-store)
@@ -509,7 +511,7 @@
             (displayln "Users: ------------------------------------------------------------")
             ;;(print-users .?users)
             (for (user .?users)
-          (displayln (hash->list user)))
+              (displayln (hash->list user)))
 
             (displayln "Bots: ------------------------------------------------------------")
             (for (bot .?bots)
@@ -547,10 +549,10 @@
   (let-hash (load-config)
     (when .?groups
       (when (table? .groups)
-	(if (hash-ref .groups group)
-	  (for (user (hash-ref .groups group))
+        (if (hash-ref .groups group)
+          (for (user (hash-ref .groups group))
             (whisper user channel message))
-	  (displayln "Error: group" group " not found in " .groups))))))
+          (displayln "Error: group" group " not found in " .groups))))))
 
 (def (set-presence status)
   "Set your status to Active, or Away"
