@@ -47,12 +47,13 @@
 
 (def (get-chat-list)
   (let-hash (load-config)
-    (let* ((uri (format "https://slack.com/api/im.list?token=~a" .token))
-           (results (do-get uri))
-           (myjson (from-json results))
-           (status (hash-get myjson 'status))
-           (ims (hash-get myjson 'ims)))
-      ims)))
+    (let (uri (format "https://slack.com/api/im.list?token=~a" .token))
+      (with ([status . body] (rest-call 'get url (default-headers .basic-auth)))
+        (unless status
+          (error body))
+        (when (table? body)
+          (let-hash body
+            .?ims))))))
 
 (def (chats)
   (let ((chats (get-chat-list))
@@ -76,49 +77,53 @@
   (let-hash (load-config)
     (let* ((users-hash (users-hash))
            (uri (format "https://slack.com/api/groups.history?token=~a&channel=~a&count=~a" .token group 2000))
-           (results (do-get uri))
-           (myjson (from-json results))
            (outs [[ "User" "Message" "ts" "team" ]]))
-
-      (let-hash myjson
-        (for (message .messages)
-          (dp (table->list message))
-          (let-hash message
-            (set! outs (cons [ (user-from-id .?user users-hash)
-                               .?text
-                               .?ts
-                               .?team ] outs)))))
-      (style-output outs))))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (when (table? body)
+          (let-hash body
+            (for (message .messages)
+              (dp (table->list message))
+              (let-hash message
+                (set! outs (cons [ (user-from-id .?user users-hash)
+                                   .?text
+                                   .?ts
+                                   .?team ] outs)))))
+          (style-output outs))))))
 
 (def (user user)
   (let-hash (load-config)
-    (let* ((uri (format "https://slack.com/api/users.info?token=~a&user=~a" .token user))
-           (results (do-get uri))
-           (myjson (from-json results)))
-      (displayln results))))
+    (let (uri (format "https://slack.com/api/users.info?token=~a&user=~a" .token user))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (present-item body)))))
 
 (def (groups)
   (let-hash (load-config)
-    (let* ((uri (format "https://slack.com/api/groups.list?token=~a" .token))
-	   (results (do-get uri))
-	   (myjson (from-json results))
-	   (groups (hash-get myjson 'groups)))
-      (displayln "|name|creator|is_group|purpose|members|created|name2|id |is_archived|is_mpim|topic|priority|")
-      (displayln "|--|-------|-----|-------------|----|---------------|--------|")
-      (for (g groups)
-        (let-hash g
-          (displayln "|" .name_normalized
-                     "|" (hash-ref .topic 'value)
-                     "|" .creator
-                     "|" .is_group
-                     "|" (hash-ref .purpose 'value)
-                     "|" .members
-                     "|" .created
-                     "|" .name
-                     "|" .id
-                     "|" .is_archived
-                     "|" .is_mpim
-                     "|" .priority "|"))))))
+    (let (uri (format "https://slack.com/api/groups.list?token=~a" .token))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (when (table? body)
+          (let-hash body
+            (displayln "|name|creator|is_group|purpose|members|created|name2|id |is_archived|is_mpim|topic|priority|")
+            (displayln "|--|-------|-----|-------------|----|---------------|--------|")
+            (for (g .groups)
+              (let-hash g
+                (displayln "|" .name_normalized
+                           "|" (hash-ref .topic 'value)
+                           "|" .creator
+                           "|" .is_group
+                           "|" (hash-ref .purpose 'value)
+                           "|" .members
+                           "|" .created
+                           "|" .name
+                           "|" .id
+                           "|" .is_archived
+                           "|" .is_mpim
+                           "|" .priority "|")))))))))
 
 (def (post channel message from)
   (let-hash (load-config)
@@ -129,9 +134,11 @@
 		   ("as_user" #t)
 		   ("username" from)
 		   ("text" msg)
-		   ("channel" channel))))
-	   (results (do-post uri (default-headers) data)))
-      (displayln results))))
+		   ("channel" channel)))))
+      (with ([ status body ] (rest-call 'post url (default-headers) data))
+        (unless status
+          (error body))
+        (present-item body)))))
 
 (def (im-open name)
   (let* ((uri "https://slack.com/api/im.open")
@@ -157,11 +164,11 @@
 
 (def (emojis)
   (let-hash (load-config)
-    (let*
-	((uri (format "https://slack.com/api/emoji.list?token=~a" .token))
-	 (results (do-get uri))
-	 (myjson (from-json results)))
-      (displayln results))))
+    (let (uri (format "https://slack.com/api/emoji.list?token=~a" .token))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (present-item body)))))
 
 (def (delete channel timestamp)
   "Remove a message from a chat channel"
@@ -172,45 +179,53 @@
 		   ("as_user" #t)
 		   ("ts" timestamp)
 		   ("channel" channel))))
-	   (results (do-post uri (default-headers) data)))
-      (displayln results))))
+    (with ([status body] (rest-call 'post url (default-headers) data))
+      (unless status
+        (error body))
+      (present-item body))))))
 
 (def (search query)
   (let-hash (load-config)
-    (let* ((uri (format "https://slack.com/api/search.messages?token=~a&count=~a&query=~a" .token 100 query))
-           (results (do-get uri))
-           (outs [[ "id" "channel" "Message" "channel-id" "ts" "type" "user" "permalink" ]])
-           (myjson (from-json results)))
-      (let-hash myjson
-	(if .?messages
-	  (let-hash .?messages
-	    (if .?matches
-	      (let-hash .?matches
-                (for (m ..matches)
-                  (let-hash m
-                    (set! outs (cons [ .username
-                                       (hash-get .channel 'name)
-                                       .text
-                                       (hash-get .channel 'id)
-                                       .ts
-                                       .type
-                                       .user
-                                       .permalink ] outs)))))))))
-      (style-output outs))))
+    (let ((uri (format "https://slack.com/api/search.messages?token=~a&count=~a&query=~a" .token 100 query))
+          (outs [[ "id" "channel" "Message" "channel-id" "ts" "type" "user" "permalink" ]]))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (when (table? body)
+          (let-hash body
+            (if .?messages
+              (let-hash .?messages
+                (if .?matches
+                  (let-hash .?matches
+                    (for (m ..matches)
+                      (let-hash m
+                        (set! outs (cons [ .username
+                                           (hash-get .channel 'name)
+                                           .text
+                                           (hash-get .channel 'id)
+                                           .ts
+                                           .type
+                                           .user
+                                           .permalink ] outs)))))))))
+          (style-output outs)))))
 
 (def (gul)
   (let-hash (load-config)
-    (let* ((uri (format "https://slack.com/api/users.list?token=~a" .token))
-	   (results (do-get uri)))
-      (displayln results))))
+    (let (uri (format "https://slack.com/api/users.list?token=~a" .token))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (present-item body)))))
 
 (def (get-user-list)
   (let-hash (load-config)
-    (let* ((uri (format "https://slack.com/api/users.list?token=~a" .token))
-	   (results (do-get uri))
-	   (myjson (from-json results))
-	   (members (hash-ref myjson 'members)))
-      members)))
+    (let (uri (format "https://slack.com/api/users.list?token=~a" .token))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (when (table? body)
+          (let-hash body
+            .members))))))
 
 (def (users)
   (let* ((members (get-user-list))
@@ -233,16 +248,20 @@
 
 (def (id-for-user user)
   (let-hash (load-config)
-    (let* ((uri (format "https://slack.com/api/users.list?token=~a" .token))
-           (results (do-get uri))
-           (myjson (from-json results))
-           (members (hash-ref myjson 'members))
-           (id #f))
-      (for (u members)
-        (let-hash u
-          (when (string=? .name user)
-            (set! id .id))))
-      id)))
+    (let ((uri (format "https://slack.com/api/users.list?token=~a" .token))
+          (id #f))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (when (table? body)
+          (let-hash body
+            (when (and .?members
+                       (list? .?members))
+              (for (u .?members)
+                (let-hash u
+                  (when (string=? .name user)
+                    (set! id .id))))))))
+              id)))
 
 (def (id-for-channel channel)
   (let ((id #f))
@@ -255,11 +274,12 @@
 
 (def (get-channel-list)
   (let-hash (load-config)
-    (let* ((uri (format "https://slack.com/api/channels.list?token=~a" .token))
-           (headers '(("Content-type" . "application/json")))
-           (results (do-get uri))
-           (channels (from-json results)))
-      channels)))
+    (let (uri (format "https://slack.com/api/channels.list?token=~a" .token))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (when (table? body)
+          body)))))
 
 (def (channels)
   (let-hash (get-channel-list)
