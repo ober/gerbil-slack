@@ -67,8 +67,7 @@
    ("set-topic" (hash (description: "Set topic on channel") (usage: "set-topic <channel> <topic>") (count: 2)))
    ("user" (hash (description: "Describe user") (usage: "user <username>") (count: 1)))
    ("users" (hash (description: "List All Slack Users") (usage: "users") (count: 0)))
-   ("whisper" (hash (description: "Send private message to user in channel") (usage: "whisper <username> <channel> <message>") (count: 3)))
-   ))
+   ("whisper" (hash (description: "Send private message to user in channel") (usage: "whisper <username> <channel> <message>") (count: 3)))))
 
 (def (main . args)
   (if (null? args)
@@ -96,5 +95,5 @@
   (displayln (format "Slack: version ~a" version))
   (displayln "Verbs:")
   (for (k (sort! (hash-keys interactives) string<?))
-       (displayln (format "~a: ~a" k (hash-get (hash-get interactives k) description:))))
+    (displayln (format "~a: ~a" k (hash-get (hash-get interactives k) description:))))
   (exit 2))

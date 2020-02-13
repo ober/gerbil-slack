@@ -50,7 +50,7 @@
 (def (get-chat-list)
   (let-hash (load-config)
     (let (url (format "https://slack.com/api/im.list?token=~a" .token))
-      (with ([status . body] (rest-call 'get url (default-headers .basic-auth)))
+      (with ([status . body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
         (when (table? body)
@@ -91,8 +91,8 @@
                 (set! outs (cons [ (user-from-id .?user users-hash)
                                    .?text
                                    .?ts
-                                   .?team ] outs)))))
-          (style-output outs))))))
+                                   .?team ] outs)))))))
+          (style-output outs))))
 
 (def (user user)
   (let-hash (load-config)
