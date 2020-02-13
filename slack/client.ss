@@ -49,7 +49,7 @@
 
 (def (get-chat-list)
   (let-hash (load-config)
-    (let (uri (format "https://slack.com/api/im.list?token=~a" .token))
+    (let (url (format "https://slack.com/api/im.list?token=~a" .token))
       (with ([status . body] (rest-call 'get url (default-headers .basic-auth)))
         (unless status
           (error body))
@@ -78,7 +78,7 @@
 (def (ghistory group)
   (let-hash (load-config)
     (let* ((users-hash (users-hash))
-           (uri (format "https://slack.com/api/groups.history?token=~a&channel=~a&count=~a" .token group 2000))
+           (url (format "https://slack.com/api/groups.history?token=~a&channel=~a&count=~a" .token group 2000))
            (outs [[ "User" "Message" "ts" "team" ]]))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
@@ -96,7 +96,7 @@
 
 (def (user user)
   (let-hash (load-config)
-    (let (uri (format "https://slack.com/api/users.info?token=~a&user=~a" .token user))
+    (let (url (format "https://slack.com/api/users.info?token=~a&user=~a" .token user))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -104,7 +104,7 @@
 
 (def (groups)
   (let-hash (load-config)
-    (let (uri (format "https://slack.com/api/groups.list?token=~a" .token))
+    (let (url (format "https://slack.com/api/groups.list?token=~a" .token))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -129,7 +129,7 @@
 
 (def (post channel message from)
   (let-hash (load-config)
-    (let* ((uri "https://slack.com/api/chat.postMessage")
+    (let* ((url "https://slack.com/api/chat.postMessage")
            (msg (get-if-set-b64 "slackmsg" message))
 	   (data (json-object->string
 		  (hash
@@ -143,7 +143,7 @@
         (present-item body)))))
 
 (def (im-open name)
-  (let* ((uri "https://slack.com/api/im.open")
+  (let* ((url "https://slack.com/api/im.open")
 	 (id (id-for-user name))
 	 (data (json-object->string
 		(hash
@@ -168,7 +168,7 @@
 
 (def (emojis)
   (let-hash (load-config)
-    (let (uri (format "https://slack.com/api/emoji.list?token=~a" .token))
+    (let (url (format "https://slack.com/api/emoji.list?token=~a" .token))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -177,20 +177,20 @@
 (def (delete channel timestamp)
   "Remove a message from a chat channel"
   (let-hash (load-config)
-    (let* ((uri "https://slack.com/api/chat.delete")
+    (let* ((url "https://slack.com/api/chat.delete")
 	   (data (json-object->string
 		  (hash
 		   ("as_user" #t)
 		   ("ts" timestamp)
-		   ("channel" channel))))
-           (with ([status body] (rest-call 'post url (default-headers) data))
-             (unless status
-               (error body))
-             (present-item body))))))
+		   ("channel" channel)))))
+      (with ([status body] (rest-call 'post url (default-headers) data))
+        (unless status
+          (error body))
+        (present-item body)))))
 
 (def (search query)
   (let-hash (load-config)
-    (let ((uri (format "https://slack.com/api/search.messages?token=~a&count=~a&query=~a" .token 100 query))
+    (let ((url (format "https://slack.com/api/search.messages?token=~a&count=~a&query=~a" .token 100 query))
           (outs [[ "id" "channel" "Message" "channel-id" "ts" "type" "user" "permalink" ]]))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
@@ -203,19 +203,19 @@
                   (let-hash .?matches
                     (for (m ..matches)
                       (let-hash m
-                        (set! outs (cons [ .username
+                        (set! outs (cons [ (or .?username "Unknown")
                                            (hash-get .channel 'name)
-                                           .text
+                                           (or .?text "No Text")
                                            (hash-get .channel 'id)
-                                           .ts
-                                           .type
-                                           .user
-                                           .permalink ] outs)))))))))))
+                                           .?ts
+                                           .?type
+                                           .?user
+                                           .?permalink ] outs)))))))))))
       (style-output outs))))
 
 (def (gul)
   (let-hash (load-config)
-    (let (uri (format "https://slack.com/api/users.list?token=~a" .token))
+    (let (url (format "https://slack.com/api/users.list?token=~a" .token))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -223,7 +223,7 @@
 
 (def (get-user-list)
   (let-hash (load-config)
-    (let (uri (format "https://slack.com/api/users.list?token=~a" .token))
+    (let (url (format "https://slack.com/api/users.list?token=~a" .token))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -252,7 +252,7 @@
 
 (def (id-for-user user)
   (let-hash (load-config)
-    (let ((uri (format "https://slack.com/api/users.list?token=~a" .token))
+    (let ((url (format "https://slack.com/api/users.list?token=~a" .token))
           (id #f))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
@@ -278,7 +278,7 @@
 
 (def (get-channel-list)
   (let-hash (load-config)
-    (let (uri (format "https://slack.com/api/channels.list?token=~a" .token))
+    (let (url (format "https://slack.com/api/channels.list?token=~a" .token))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -306,7 +306,7 @@
   (let-hash (load-config)
     (let* ((users-hash (users-hash))
            (id (id-for-channel user))
-           (uri (format "https://slack.com/api/im.history?token=~a&channel=~a&count=1000" .token id))
+           (url (format "https://slack.com/api/im.history?token=~a&channel=~a&count=1000" .token id))
            (outs [[ "User" "Channel" "Message" "channel-id" "ts" "team" ]]))
       (with ([ status body ] (rest-call 'get url (default-headers)))
         (unless status
@@ -328,7 +328,7 @@
   (let-hash (load-config)
     (let* ((users-hash (users-hash))
            (id (id-for-channel channel))
-           (uri (format "https://slack.com/api/channels.history?token=~a&channel=~a&count=1000" .token id))
+           (url (format "https://slack.com/api/channels.history?token=~a&channel=~a&count=1000" .token id))
            (outs [[ "User" "Channel" "Message" "channel-id" "ts" "team" ]]))
       (with ([ status body ] (rest-call 'get url (default-headers)))
         (unless status
@@ -372,7 +372,7 @@
                  " is_private: " .?is_private))))
 
 (def (set-topic channel topic)
-  (let* ((uri "https://slack.com/api/channels.setTopic")
+  (let* ((url "https://slack.com/api/channels.setTopic")
          (data (json-object->string
                 (hash
                  ("topic" topic)
@@ -438,7 +438,7 @@
 
 (def (whisper user channel msg)
   (let-hash (load-config)
-    (let* ((uri "https://slack.com/api/chat.postEphemeral")
+    (let* ((url "https://slack.com/api/chat.postEphemeral")
            (data (json-object->string
                   (hash
                    ("as_user" #t)
@@ -487,7 +487,7 @@
 
 (def (rtm-start-json)
   (let-hash (load-config)
-    (let (uri (format "https://slack.com/api/rtm.start?token=~a" .token))
+    (let (url (format "https://slack.com/api/rtm.start?token=~a" .token))
       (with ([ status body ] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -496,7 +496,7 @@
 
 (def (rtm-start)
   (let-hash (load-config)
-    (let (uri (format "https://slack.com/api/rtm.start?token=~a" .token))
+    (let (url (format "https://slack.com/api/rtm.start?token=~a" .token))
       (with ([ status body ] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -560,7 +560,7 @@
               (string=? status "away"))
     (error "Error: only away, or active is allowed for status"))
   (let-hash (load-config)
-    (let ((uri "https://slack.com/api/users.setPresence")
+    (let ((url "https://slack.com/api/users.setPresence")
           (data (json-object->string (hash ("presence" status)))))
       (with ([ status body ] (rest-call 'post url (default-headers) data))
         (unless status
@@ -571,7 +571,7 @@
   "Get the presence status. away, or active of a user"
   (let-hash (load-config)
     (let* ((id (id-for-user user))
-           (uri (format "https://slack.com/api/users.getPresence?user=~a&token=~a" id .token)))
+           (url (format "https://slack.com/api/users.getPresence?user=~a&token=~a" id .token)))
       (with ([ status body ] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
