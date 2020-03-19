@@ -85,14 +85,15 @@
           (error body))
         (when (table? body)
           (let-hash body
-            (for (message .messages)
-              (dp (table->list message))
-              (let-hash message
-                (set! outs (cons [ (user-from-id .?user users-hash)
-                                   .?text
-                                   .?ts
-                                   .?team ] outs)))))))
-          (style-output outs))))
+            (when .?messages
+              (for (message .messages)
+                (dp (table->list message))
+                (let-hash message
+                  (set! outs (cons [ (user-from-id .?user users-hash)
+                                     .?text
+                                     .?ts
+                                     .?team ] outs))))))))
+      (style-output outs))))
 
 (def (user user)
   (let-hash (load-config)
@@ -101,6 +102,9 @@
         (unless status
           (error body))
         (present-item body)))))
+
+
+
 
 (def (groups)
   (let-hash (load-config)
@@ -213,23 +217,31 @@
                                            .?permalink ] outs)))))))))))
       (style-output outs))))
 
+(def (get-group-list)
+  (cache-or-run "~/.slack-groups.cache" 2592000
+                '(let-hash (load-config)
+                   (let (url (format "https://slack.com/api/groups.list?token=~a" .token))
+                     (with ([status body] (rest-call 'get url (default-headers)))
+                       (unless status
+                         (error body))
+                       (when (table? body)
+                         (let-hash body
+                           .?groups)))))))
+
 (def (gul)
-  (let-hash (load-config)
-    (let (url (format "https://slack.com/api/users.list?token=~a" .token))
-      (with ([status body] (rest-call 'get url (default-headers)))
-        (unless status
-          (error body))
-        (present-item body)))))
+  (for (group (get-group-list))
+    (present-item group)))
 
 (def (get-user-list)
-  (let-hash (load-config)
-    (let (url (format "https://slack.com/api/users.list?token=~a" .token))
-      (with ([status body] (rest-call 'get url (default-headers)))
-        (unless status
-          (error body))
-        (when (table? body)
-          (let-hash body
-            .members))))))
+  (cache-or-run "~/.slack-users.cache" 2592000
+                '(let-hash (load-config)
+                   (let (url (format "https://slack.com/api/users.list?token=~a" .token))
+                     (with ([status body] (rest-call 'get url (default-headers)))
+                       (unless status
+                         (error body))
+                       (when (table? body)
+                         (let-hash body
+                           .?members)))))))
 
 (def (users)
   (let* ((members (get-user-list))
@@ -252,7 +264,7 @@
 
 (def (id-for-user username)
   (let ((id #f)
-        (users (cache-or-run "~/.slack-users.cache" 2592000 '(ober/slack/client#get-user-list))))
+        (users (get-user-list)))
     (for (user users)
       (let-hash user
         (when (string=? .name username)
@@ -269,13 +281,14 @@
     id))
 
 (def (get-channel-list)
-  (let-hash (load-config)
-    (let (url (format "https://slack.com/api/channels.list?token=~a" .token))
-      (with ([status body] (rest-call 'get url (default-headers)))
-        (unless status
-          (error body))
-        (when (table? body)
-          body)))))
+  (cache-or-run "~/.slack-channels.cache" 2592000
+                '(let-hash (load-config)
+                   (let (url (format "https://slack.com/api/channels.list?token=~a" .token))
+                     (with ([status body] (rest-call 'get url (default-headers)))
+                       (unless status
+                         (error body))
+                       (when (table? body)
+                         body))))))
 
 (def (channels)
   (let-hash (get-channel-list)
@@ -304,16 +317,18 @@
         (unless status
           (error body))
         (when (table? body)
+          (dp (present-item body))
           (let-hash body
-            (for (message .messages)
-              (dp (table->list message))
-              (let-hash message
-                (set! outs (cons [ (user-from-id .?user users-hash)
-                                   user
-                                   .?text
-                                   id
-                                   .?ts
-                                   .?team ] outs)))))))
+            (when .?messages
+              (for (message .messages)
+                (dp (table->list message))
+                (let-hash message
+                  (set! outs (cons [ (user-from-id .?user users-hash)
+                                     user
+                                     .?text
+                                     id
+                                     .?ts
+                                     .?team ] outs))))))))
       (style-output outs))))
 
 (def (channel-history channel)
@@ -326,17 +341,19 @@
         (unless status
           (error body))
         (when (table? body)
+          (present-item body)
           (let-hash body
-            (for (message .messages)
-              (dp (table->list message))
-              (let-hash message
-                (set! outs (cons [ (user-from-id .?user users-hash)
-                                   channel
-                                   .?text
-                                   id
-                                   .?ts
-                                   .?team ] outs)))))))
-      (style-output outs))))
+            (when .?messages
+              (for (message .messages)
+                (dp (table->list message))
+                (let-hash message
+                  (set! outs (cons [ (user-from-id .?user users-hash)
+                                     channel
+                                     .?text
+                                     id
+                                     .?ts
+                                     .?team ] outs))))))))
+        (style-output outs))))
 
 (def (print-channels channels)
   (when (list? channels)
