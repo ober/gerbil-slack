@@ -250,22 +250,14 @@
                           .?tz_label ] outs))))
     (style-output outs)))
 
-(def (id-for-user user)
-  (let-hash (load-config)
-    (let ((url (format "https://slack.com/api/users.list?token=~a" .token))
-          (id #f))
-      (with ([status body] (rest-call 'get url (default-headers)))
-        (unless status
-          (error body))
-        (when (table? body)
-          (let-hash body
-            (when (and .?members
-                       (list? .?members))
-              (for (u .?members)
-                (let-hash u
-                  (when (string=? .name user)
-                    (set! id .id))))))))
-      id)))
+(def (id-for-user username)
+  (let ((id #f)
+        (users (cache-or-run "~/.slack-users.cache" 2592000 '(ober/slack/client#get-user-list))))
+    (for (user users)
+      (let-hash user
+        (when (string=? .name username)
+          (set! id .id))))
+    id))
 
 (def (id-for-channel channel)
   (let ((id #f))
