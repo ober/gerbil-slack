@@ -235,7 +235,7 @@
 (def (get-user-list)
   (cache-or-run "~/.slack-users.cache" 2592000
                 '(let-hash (load-config)
-                   (let (url (format "https://slack.com/api/users.list?token=~a" .token))
+                   (let (url (format "https://slack.com/api/users.list?token=~a" .?token))
                      (with ([status body] (rest-call 'get url (default-headers)))
                        (unless status
                          (error body))
