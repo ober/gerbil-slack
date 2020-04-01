@@ -218,30 +218,30 @@
       (style-output outs))))
 
 (def (get-group-list)
-  (cache-or-run "~/.slack-groups.cache" 2592000
-                '(let-hash (load-config)
-                   (let (url (format "https://slack.com/api/groups.list?token=~a" .token))
-                     (with ([status body] (rest-call 'get url (default-headers)))
-                       (unless status
-                         (error body))
-                       (when (table? body)
-                         (let-hash body
-                           .?groups)))))))
+  ;;  (cache-or-run "~/.slack-groups.cache" 2592000
+  (let-hash (load-config)
+    (let ((url (format "https://slack.com/api/groups.list?token=~a" .token)))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (when (table? body)
+          (let-hash body
+            .?groups))))))
 
 (def (gul)
   (for (group (get-group-list))
     (present-item group)))
 
 (def (get-user-list)
-  (cache-or-run "~/.slack-users.cache" 2592000
-                '(let-hash (load-config)
-                   (let (url (format "https://slack.com/api/users.list?token=~a" .?token))
-                     (with ([status body] (rest-call 'get url (default-headers)))
-                       (unless status
-                         (error body))
-                       (when (table? body)
-                         (let-hash body
-                           .?members)))))))
+  ;;(cache-or-run "~/.slack-users.cache" 2592000
+  (let-hash (load-config)
+    (let ((url (format "https://slack.com/api/users.list?token=~a" .?token)))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (when (table? body)
+          (let-hash body
+            .?members))))))
 
 (def (users)
   (let* ((members (get-user-list))
@@ -281,14 +281,14 @@
     id))
 
 (def (get-channel-list)
-  (cache-or-run "~/.slack-channels.cache" 2592000
-                '(let-hash (load-config)
-                   (let (url (format "https://slack.com/api/channels.list?token=~a" .token))
-                     (with ([status body] (rest-call 'get url (default-headers)))
-                       (unless status
-                         (error body))
-                       (when (table? body)
-                         body))))))
+  ;;(cache-or-run "~/.slack-channels.cache" 2592000
+  (let-hash (load-config)
+    (let (url (format "https://slack.com/api/channels.list?token=~a" .token))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (when (table? body)
+          body)))))
 
 (def (channels)
   (let-hash (get-channel-list)
