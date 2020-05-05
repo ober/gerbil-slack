@@ -491,9 +491,6 @@
     (base64-string->u8vector iv)
     (base64-string->u8vector password))))
 
-(def (list-records)
-  (displayln "records here"))
-
 (def (rtm-start-json)
   (let-hash (load-config)
     (let (url (format "https://slack.com/api/rtm.start?token=~a" .token))
