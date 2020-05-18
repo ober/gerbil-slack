@@ -77,9 +77,8 @@
 
 (def (ghistory group)
   (let-hash (load-config)
-    (let* ((users-hash (users-hash))
-           (url (format "https://slack.com/api/groups.history?token=~a&channel=~a&count=~a" .token group 2000))
-           (outs [[ "User" "Message" "ts" "team" ]]))
+    (let ((url (format "https://slack.com/api/groups.history?token=~a&channel=~a&count=~a" .token group 2000))
+          (outs [[ "User" "Message" "ts" "team" ]]))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -89,10 +88,13 @@
               (for (message .messages)
                 (dp (table->list message))
                 (let-hash message
-                  (set! outs (cons [ (user-from-id .?user users-hash)
-                                     .?text
-                                     .?ts
-                                     .?team ] outs))))))))
+                  (set! outs (cons [
+                                    (if .?user
+                                      (user-from-id .?user users-hash)
+                                      .?user)
+                                    .?text
+                                    .?ts
+                                    .?team ] outs))))))))
       (style-output outs))))
 
 (def (user user)
@@ -193,6 +195,7 @@
         (present-item body)))))
 
 (def (search query)
+  "Search all conversations for query"
   (let-hash (load-config)
     (let ((url (format "https://slack.com/api/search.messages?token=~a&count=~a&query=~a" .token 100 query))
           (outs [[ "id" "channel" "Message" "channel-id" "ts" "type" "user" "permalink" ]]))
@@ -238,6 +241,7 @@
     (let ((url (format "https://slack.com/api/users.list?token=~a" .?token)))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
+          (pi "boom")
           (error body))
         (when (table? body)
           (let-hash body
@@ -309,26 +313,30 @@
 
 (def (im-history user)
   (let-hash (load-config)
-    (let* ((users-hash (users-hash))
-           (id (id-for-channel user))
-           (url (format "https://slack.com/api/im.history?token=~a&channel=~a&count=1000" .token id))
-           (outs [[ "User" "Channel" "Message" "channel-id" "ts" "team" ]]))
-      (with ([ status body ] (rest-call 'get url (default-headers)))
-        (unless status
-          (error body))
-        (when (table? body)
-          (dp (present-item body))
-          (let-hash body
-            (when .?messages
-              (for (message .messages)
-                (dp (table->list message))
-                (let-hash message
-                  (set! outs (cons [ (user-from-id .?user users-hash)
-                                     user
-                                     .?text
-                                     id
-                                     .?ts
-                                     .?team ] outs))))))))
+    (let ((outs [[ "User" "Datetime" "Message" "channel-id" "ts" "team" ]])
+          (members (users-hash))
+          (ts 0))
+      (let lp ((latest ts))
+        (let (url (format "https://slack.com/api/im.history?token=~a&channel=~a&count=1000&latest=~a" .token user latest))
+          (with ([ status body ] (rest-call 'get url (default-headers)))
+            (unless status
+              (error body))
+            (when (table? body)
+              (let-hash body
+                (when .?messages
+                  (for (message .messages)
+                    (let-hash message
+                      (set! outs (cons [
+                                        (user-from-id .?user members)
+                                        (print-date (epoch->date (float->int (string->number .?ts))))
+                                        .?text
+                                        user
+                                        .?ts
+                                        .?team ] outs))
+                      (set! ts .?ts))))
+                (displayln (format "more: ~a latest: ~a" .?has_more .?latest))
+                (when .?has_more
+                  (lp ts)))))))
       (style-output outs))))
 
 (def (channel-history channel)
@@ -341,7 +349,6 @@
         (unless status
           (error body))
         (when (table? body)
-          (present-item body)
           (let-hash body
             (when .?messages
               (for (message .messages)
@@ -353,7 +360,7 @@
                                      id
                                      .?ts
                                      .?team ] outs))))))))
-        (style-output outs))))
+      (style-output outs))))
 
 (def (print-channels channels)
   (when (list? channels)
