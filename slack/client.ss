@@ -4,37 +4,22 @@
 
 (import
   :gerbil/gambit
-  :gerbil/gambit/bits
-  :gerbil/gambit/misc
-  :gerbil/gambit/os
-  :gerbil/gambit/ports
-  :gerbil/gambit/threads
-  :std/actor/message
-  :std/actor/proto
-  :std/coroutine
+  :ober/oberlib
   :std/crypto/cipher
-  :std/crypto/etc
-  :std/crypto/libcrypto
   :std/error
   :std/format
-  :std/generic
+  :std/generic/dispatch
   :std/iter
   :std/logger
-  :std/misc/completion
   :std/misc/list
-  :std/misc/threads
-  :std/net/request
   :std/net/websocket
   :std/pregexp
   :std/srfi/13
-  :std/srfi/19
-  :std/srfi/95
   :std/sugar
   :std/text/base64
   :std/text/json
-  :std/text/utf8
   :std/text/yaml
-  :ober/oberlib)
+  )
 
 (export #t)
 (declare (not optimize-dead-definitions))
