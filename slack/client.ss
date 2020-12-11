@@ -23,7 +23,7 @@
 (export #t)
 (declare (not optimize-dead-definitions))
 
-(def version "0.06")
+(def version "0.07")
 
 (def program-name "slack")
 (def config-file "~/.slack.yaml")
