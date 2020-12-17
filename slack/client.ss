@@ -384,6 +384,16 @@
         (let-hash body
           (present-item body))))))
 
+(def (auth-test)
+  (let-hash (load-config)
+    (let ((url (format "https://slack.com/api/auth.test?token=~a" .token)))
+      (with ([status body] (rest-call 'get url (default-headers)))
+        (unless status
+          (error body))
+        (when (table? body)
+          (let-hash body
+            (present-item body)))))))
+
 (def (load-config)
   (let ((config (hash))
         (config-data (yaml-load config-file)))
