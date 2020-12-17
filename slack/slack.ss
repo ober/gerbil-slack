@@ -44,6 +44,7 @@
 (def interactives
   (hash
    ("active" (hash (description: "Set your status to Active.") (usage: "away") (count: 0)))
+   ("auth-test" (hash (description: "Check your token permissions") (usage: "auth-test") (count: 0)))
    ("away" (hash (description: "Set your status to Away.") (usage: "away") (count: 0)))
    ("channel-history" (hash (description: "Channel list.") (usage: "channel-history <channel id>") (count: 1)))
    ("channels" (hash (description: "Channel list.") (usage: "channels") (count: 0)))
@@ -67,7 +68,8 @@
    ("set-topic" (hash (description: "Set topic on channel") (usage: "set-topic <channel> <topic>") (count: 2)))
    ("user" (hash (description: "Describe user") (usage: "user <username>") (count: 1)))
    ("users" (hash (description: "List All Slack Users") (usage: "users") (count: 0)))
-   ("whisper" (hash (description: "Send private message to user in channel") (usage: "whisper <username> <channel> <message>") (count: 3)))))
+   ("whisper" (hash (description: "Send private message to user in channel") (usage: "whisper <username> <channel> <message>") (count: 3)))
+   ))
 
 (def (main . args)
   (if (null? args)
