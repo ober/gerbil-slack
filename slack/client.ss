@@ -1,5 +1,5 @@
 ;; -*- Gerbil -*-
-;; ©ober 2020
+;; ©ober 2021
 ;; slack client library
 
 (import
@@ -23,7 +23,7 @@
 (export #t)
 (declare (not optimize-dead-definitions))
 
-(def version "0.07")
+(def version "0.08")
 
 (def program-name "slack")
 (def config-file "~/.slack.yaml")
@@ -33,31 +33,36 @@
 
 (def (get-chat-list)
   (let-hash (load-config)
-    (let (url (format "https://slack.com/api/im.list?token=~a" .token))
+    (let (url (format "https://slack.com/api/conversations.list?token=~a&type=im" .token))
       (with ([status . body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
-          (let-hash body
-            .?ims))))))
+        (pi body)
+        (let ((body2 (car body)))
+          (when (table? body2)
+            (pi body2)
+            (let-hash body2
+              .?channels)))))))
 
 (def (chats)
   (let ((chats (get-chat-list))
         (outs [[ "user" "id" "user-id" "priority" "is_user_deleted" "is_archived" "is_im" "created" "is_org_shared" ]]))
-    (for (chat chats)
-      (let-hash chat
-        (set! outs (cons [
-                          (id-for-user .?user)
-                          .?id
-                          .?user
-                          .?priority
-                          .?is_user_deleted
-                          .?is_archived
-                          .?is_im
-                          .?created
-                          .?is_org_shared
-                          ] outs))))
-    (style-output outs)))
+    (when chats
+      (for (chat chats)
+        (pi chat)
+        (let-hash chat
+          (set! outs (cons [
+                            (id-for-user .?user)
+                            .?id
+                            .?user
+                            .?priority
+                            .?is_user_deleted
+                            .?is_archived
+                            .?is_im
+                            .?created
+                            .?is_org_shared
+                            ] outs))))
+      (style-output outs))))
 
 (def (ghistory group)
   (let-hash (load-config)
@@ -94,7 +99,7 @@
 
 (def (groups)
   (let-hash (load-config)
-    (let (url (format "https://slack.com/api/groups.list?token=~a" .token))
+    (let (url (format "https://slack.com/api/conversations.list?token=~a" .token))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -133,11 +138,11 @@
         (present-item body)))))
 
 (def (im-open name)
-  (let* ((url "https://slack.com/api/im.open")
+  (let* ((url "https://slack.com/api/conversations.open")
 	 (id (id-for-user name))
 	 (data (json-object->string
 		(hash
-		 ("user" id)
+		 ("users" [id])
 		 ("return_im" #t)))))
     (with ([status body] (rest-call 'post url (default-headers) data))
       (unless status
@@ -207,7 +212,7 @@
 (def (get-group-list)
   ;;  (cache-or-run "~/.slack-groups.cache" 2592000
   (let-hash (load-config)
-    (let ((url (format "https://slack.com/api/groups.list?token=~a" .token)))
+    (let ((url (format "https://slack.com/api/conversations.list?token=~a" .token)))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -271,7 +276,7 @@
 (def (get-channel-list)
   ;;(cache-or-run "~/.slack-channels.cache" 2592000
   (let-hash (load-config)
-    (let (url (format "https://slack.com/api/channels.list?token=~a" .token))
+    (let (url (format "https://slack.com/api/conversations.list?token=~a" .token))
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
@@ -301,7 +306,7 @@
           (members (users-hash))
           (ts 0))
       (let lp ((latest ts))
-        (let (url (format "https://slack.com/api/im.history?token=~a&channel=~a&count=1000&latest=~a" .token user latest))
+        (let (url (format "https://slack.com/api/conversations.history?token=~a&channel=~a&count=1000&latest=~a" .token user latest))
           (with ([ status body ] (rest-call 'get url (default-headers)))
             (unless status
               (error body))
@@ -327,7 +332,7 @@
   (let-hash (load-config)
     (let* ((users-hash (users-hash))
            (id (id-for-channel channel))
-           (url (format "https://slack.com/api/channels.history?token=~a&channel=~a&count=1000" .token id))
+           (url (format "https://slack.com/api/conversations.history?token=~a&channel=~a&count=1000" .token id))
            (outs [[ "User" "Channel" "Message" "channel-id" "ts" "team" ]]))
       (with ([ status body ] (rest-call 'get url (default-headers)))
         (unless status
@@ -372,7 +377,7 @@
                  " is_private: " .?is_private))))
 
 (def (set-topic channel topic)
-  (let* ((url "https://slack.com/api/channels.setTopic")
+  (let* ((url "https://slack.com/api/conversations.setTopic")
          (data (json-object->string
                 (hash
                  ("topic" topic)
