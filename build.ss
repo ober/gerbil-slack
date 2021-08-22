@@ -6,6 +6,7 @@
 (defbuild-script
   '("slack/client"
     (static-exe:
+     "slack/slack"
      "-cc-options"
      "-I/usr/pkg/include"
      "-ld-options"
