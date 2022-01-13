@@ -1,34 +1,39 @@
-.PHONY: slack
+PROJECT := slack
 
-default: slack
+NAME := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
-SYSTEM := $(shell uname -s)
+$(info "name is " $(NAME))
+$(eval uid := $(shell id -u))
+$(eval gid := $(shell id -g))
 
-ifeq ($(SYSTEM),Darwin)
-SSL-BASE :=$(lastword $(wildcard /usr/local/Cellar/openssl/*/))
-SED := sed
-MYSQL-BASE := $(lastword $(wildcard /usr/local/Cellar/mysql/*/))
-LIBYAML-BASE := $(lastword $(wildcard /usr/local/Cellar/libyaml/*/))
-#$(eval LDFLAGS := "-L$(SSL-BASE)lib -L$(LIBYAML-BASE)lib -lz -lssl -lyaml -L/usr/local/lib")
-#$(eval CPPFLAGS := "-I$(SSL-BASE)include -I$(LIBYAML-BASE)include -I/usr/local/include")
-else
-LDFLAGS := "-L/usr/lib -lssl -lyaml"
-CPPFLAGS := "-I/usr/include"
-LIBYAML-BASE := "/usr/include"
-SED := sed
-endif
+default: linux-static-docker
 
-slack: $(eval CPPFLAGS := "-I$(SSL-BASE)include -I$(LIBYAML-BASE)include -I/usr/local/include")
-slack: $(eval LDFLAGS := "-L$(SSL-BASE)lib -L$(LIBYAML-BASE)lib -lz -lssl -lyaml -L/usr/local/lib")
-slack:
-	gxc -O -o sla -static -exe -g -genv -cc-options $(CPPFLAGS) -ld-options $(LDFLAGS) -gsrc -gsc-flag -keep-c slack/sla.ss
+deps:
+	$(GERBIL_HOME)/bin/gxpkg install github.com/ober/oberlib
+	$(GERBIL_HOME)/bin/gxpkg install github.com/yanndegat/colorstring
 
-linux-static:
-	docker run -e GERBIL_PATH=/dd/.gerbil -v $(PWD):/dd -it jaimef/centos bash -c 'cd /dd && make linux-static-intern'
+build: deps
+	$(GERBIL_HOME)/bin/gxpkg link $(PROJECT) /src || true
+	$(GERBIL_HOME)/bin/gxpkg build $(PROJECT)
 
-linux-static-intern:
-	cd /dd && gxpkg link ober/slack . || true
-	gxpkg uninstall github.com/ober/oberlib
-	gxpkg install github.com/ober/oberlib
-	gxpkg build ober/slack
-	gxc -o slack-static -cc-options "-Bstatic -DOPENSSL_NO_KRB5 -I/usr/local/include -I/usr/local/ssl/include" -static -ld-options "-static -lpthread -L/usr/lib64 -L/usr/local/ssl/lib -lssl -L/usr/local/lib -ldl -lyaml -lz" -gsc-option -prelude '(declare (not safe))' -exe slack/slack.ss
+linux-static-docker:
+	docker run -it \
+	-e GERBIL_PATH=/tmp/.gerbil \
+	-u "$(uid):$(gid)" \
+	-v $(PWD):/src \
+	jaimef/alpine-current:static \
+	make -C /src linux-static
+
+linux-static: build
+	$(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static \
+	-cc-options "-Bstatic" \
+	-g -gsrc -genv \
+	-static \
+	-ld-options "-static -lpthread -L/usr/lib64 -lssl -ldl -lyaml -lz" \
+	-exe $(PROJECT)/$(PROJECT).ss
+
+clean:
+	rm -Rf $(PROJECT)-bin
+
+install:
+	mv $(PROJECT)-bin /usr/local/bin/$(PROJECT)
