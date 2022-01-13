@@ -553,7 +553,7 @@
     (if (eq? type 'text)
       (read-json (open-input-u8vector [char-encoding: 'UTF-8 init: bytes]))
       (begin
-        (warning "wamp-recv: server sent binary data (~s)" (u8vector-length bytes))
+        (displayln "wamp-recv: server sent binary data" (u8vector-length bytes))
         (raise-io-error 'wamp-recv "server sent binary data" bytes)))))
 
 (def (gw group channel message)
