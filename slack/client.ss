@@ -94,9 +94,6 @@
           (error body))
         (present-item body)))))
 
-
-
-
 (def (groups)
   (let-hash (load-config)
     (let (url (format "https://slack.com/api/conversations.list?token=~a" .token))
