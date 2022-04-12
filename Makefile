@@ -26,7 +26,7 @@ linux-static-docker:
 	make -C /src linux-static
 
 linux-static: build
-$(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static \
+	$(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static \
 	-cc-options "-Bstatic" \
 	-g -gsrc -genv \
 	-static \
