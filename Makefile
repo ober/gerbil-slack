@@ -1,7 +1,7 @@
 PROJECT := slack
 
 NAME := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-DOCKER_IMAGE := "jaimef/alpine-current:static"
+DOCKER_IMAGE := "gerbil/alpine"
 
 $(info "name is " $(NAME))
 $(eval uid := $(shell id -u))
@@ -27,7 +27,7 @@ linux-static-docker:
 
 linux-static: build
 	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static \
-	-cc-options "-Bstatic" \
+	-O2	-cc-options "-Bstatic" \
 	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lssl -ldl -lyaml -lz " \
 	-exe $(PROJECT)/$(PROJECT).ss
 
