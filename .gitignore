@@ -1,2 +1,10 @@
-*~
+*-bin
+*.c
+*.log
+*.scm
+*.scmx
+.DS_Store
+.gerbil
+.idea
 build-deps
+tmp/
