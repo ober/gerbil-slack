@@ -12,6 +12,7 @@
   :std/iter
   :std/logger
   :std/misc/list
+  :std/misc/ports
   :std/net/websocket
   :std/pregexp
   :std/srfi/13
