@@ -9,6 +9,7 @@
   :gerbil/gambit/os
   :gerbil/gambit/ports
   :gerbil/gambit/threads
+  :ober/oberlib
   :std/actor/message
   :std/actor/proto
   :std/coroutine
@@ -22,6 +23,7 @@
   :std/logger
   :std/misc/completion
   :std/misc/list
+  :std/misc/ports
   :std/misc/threads
   :std/net/request
   :std/net/websocket
@@ -34,7 +36,6 @@
   :std/text/json
   :std/text/utf8
   :std/text/yaml
-  :ober/oberlib
   :ober/slack/client)
 
 (declare (not optimize-dead-definitions))
