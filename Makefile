@@ -1,7 +1,7 @@
 PROJECT := slack
 
 NAME := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
-DOCKER_IMAGE := "gerbil/alpine"
+DOCKER_IMAGE := "gerbil/alpine:latest"
 
 $(info "name is " $(NAME))
 $(eval uid := $(shell id -u))
@@ -10,29 +10,28 @@ $(eval gid := $(shell id -g))
 default: linux-static-docker
 
 deps:
-	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxpkg install github.com/ober/oberlib
-	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxpkg install github.com/yanndegat/colorstring
+	/opt/gerbil/bin/gxpkg install github.com/ober/oberlib
 
 build: deps
-	$(GERBIL_HOME)/bin/gxpkg link $(PROJECT) /src || true
-	$(GERBIL_HOME)/bin/gxpkg build $(PROJECT)
+	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
+	/opt/gerbil/bin/gxpkg build $(PROJECT)
 
 linux-static-docker:
 	docker run -it \
 	-e GERBIL_PATH=/tmp/.gerbil \
 	-u "$(uid):$(gid)" \
-    -v $(PWD):/src:z \
+	-v $(PWD):/src:z \
 	$(DOCKER_IMAGE) \
 	make -C /src linux-static
 
 linux-static: build
-	/usr/bin/time -avp $(GERBIL_HOME)/bin/gxc -o $(PROJECT)-bin -static \
-	-O2	-cc-options "-Bstatic" \
-	-ld-options "-static -lpthread -L/usr/lib/x86_64-linux-gnu -lssl -ldl -lyaml -lz " \
+	/opt/gerbil/bin/gxc -o $(PROJECT)-bin -static \
+	-cc-options "-Bstatic" \
+	-ld-options "-static -lpthread -lyaml -lz" \
 	-exe $(PROJECT)/$(PROJECT).ss
 
 clean:
-	rm -Rf $(PROJECT)-bin
+	rm -f $(PROJECT)-bin
 
 install:
 	mv $(PROJECT)-bin /usr/local/bin/$(PROJECT)
