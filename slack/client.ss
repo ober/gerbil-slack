@@ -540,18 +540,18 @@
             (displayln "cache_ts: " .?cache_ts)
             (displayln "read_only_channels: " .?read_only_channels)))))))
 
-(def (slack-send ws msg)
-  (let (outp (open-output-u8vector))
-    (write-json msg outp)
-    (websocket-send ws (get-output-u8vector outp) 'text)))
+;; (def (slack-send ws msg)
+;;   (let (outp (open-output-u8vector))
+;;     (write-json msg outp)
+;;     (websocket-send ws (get-output-u8vector outp) 'text)))
 
-(def (slack-recv ws)
-  (let ((values bytes type) (websocket-recv ws))
-    (if (eq? type 'text)
-      (read-json (open-input-u8vector [char-encoding: 'UTF-8 init: bytes]))
-      (begin
-        (displayln "wamp-recv: server sent binary data" (u8vector-length bytes))
-        (raise-io-error 'wamp-recv "server sent binary data" bytes)))))
+;; (def (slack-recv ws)
+;;   (let ((values bytes type) (websocket-recv ws))
+;;     (if (eq? type 'text)
+;;       (read-json (open-input-u8vector [char-encoding: 'UTF-8 init: bytes]))
+;;       (begin
+;;         (displayln "wamp-recv: server sent binary data" (u8vector-length bytes))
+;;         (raise-io-error 'wamp-recv "server sent binary data" bytes)))))
 
 (def (gw group channel message)
   "Take a group and whisper the message to each member in the channel"
