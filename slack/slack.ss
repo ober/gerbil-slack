@@ -10,8 +10,6 @@
   :gerbil/gambit/ports
   :gerbil/gambit/threads
   :ober/oberlib
-  :std/actor/message
-  :std/actor/proto
   :std/coroutine
   :std/crypto/cipher
   :std/crypto/etc
