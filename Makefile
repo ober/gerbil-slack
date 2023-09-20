@@ -1,11 +1,8 @@
 PROJECT := slack
 
 NAME := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
+ARCH := $(shell uname -m)
 DOCKER_IMAGE := "gerbil/alpine:latest"
-
-$(info "name is " $(NAME))
-$(eval uid := $(shell id -u))
-$(eval gid := $(shell id -g))
 
 default: linux-static-docker
 
@@ -19,19 +16,13 @@ build: deps
 linux-static-docker:
 	docker run -it \
 	-e GERBIL_PATH=/tmp/.gerbil \
-	-u "$(uid):$(gid)" \
+	-e USER=$(USER) \
 	-v $(PWD):/src:z \
 	$(DOCKER_IMAGE) \
-	make -C /src linux-static
-
-linux-static: build
-	/opt/gerbil/bin/gxc -o $(PROJECT)-bin -static \
-	-cc-options "-Bstatic" \
-	-ld-options "-static -lpthread -lyaml -lz" \
-	-exe $(PROJECT)/$(PROJECT).ss
+	make -C /src build
 
 clean:
-	rm -f $(PROJECT)-bin
+	rm -rf .gerbil
 
 install:
-	mv $(PROJECT)-bin /usr/local/bin/$(PROJECT)
+	mv .gerbil/bin/$(PROJECT) /usr/local/bin/$(PROJECT)
