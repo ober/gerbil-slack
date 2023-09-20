@@ -24,7 +24,6 @@
   :std/misc/ports
   :std/misc/threads
   :std/net/request
-  :std/net/websocket
   :std/pregexp
   :std/srfi/13
   :std/srfi/19
