@@ -5,5 +5,5 @@
 
 (defbuild-script
   '("slack/client"
-    (exe:
+    (static-exe:
      "slack/slack")))
