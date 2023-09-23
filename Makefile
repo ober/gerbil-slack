@@ -7,8 +7,8 @@ DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)"
 default: linux-static-docker
 
 deps:
-	/opt/gerbil/bin/gxpkg install github.com/ober/oberlib
 	/opt/gerbil/bin/gxpkg install github.com/mighty-gerbils/gerbil-libyaml
+	/opt/gerbil/bin/gxpkg install github.com/ober/oberlib
 
 build: deps
 	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
@@ -20,7 +20,8 @@ linux-static-docker: clean
 	-e USER=$(USER) \
 	-v $(PWD):/src:z \
 	$(DOCKER_IMAGE) \
-	make -C /src build
+	/bin/sh
+#	make -C /src build
 
 clean:
 	rm -rf .gerbil
