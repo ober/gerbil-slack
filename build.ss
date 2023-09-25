@@ -5,5 +5,8 @@
 
 (defbuild-script
   '("slack/client"
-    (static-exe:
-     "slack/slack")))
+    (exe:
+     "slack/slack"
+     "-ld-options"
+     "-lyaml"
+     )))

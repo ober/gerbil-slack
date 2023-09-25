@@ -7,8 +7,6 @@
   :ober/oberlib
   :std/coroutine
   :std/crypto/cipher
-  :std/crypto/etc
-  :std/crypto/libcrypto
   :std/error
   :std/format
   :std/generic
