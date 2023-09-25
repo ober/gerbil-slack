@@ -5,7 +5,6 @@
 (import
   :gerbil/gambit
   :ober/oberlib
-  :std/crypto/cipher
   :std/error
   :std/format
   :std/generic/dispatch
