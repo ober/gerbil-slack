@@ -20,8 +20,7 @@ linux-static-docker: clean
 	-e USER=$(USER) \
 	-v $(PWD):/src:z \
 	$(DOCKER_IMAGE) \
-	/bin/sh
-#	make -C /src build
+	make -C /src build
 
 clean:
 	rm -rf .gerbil
