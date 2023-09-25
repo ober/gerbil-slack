@@ -4,11 +4,6 @@
 
 (import
   :gerbil/gambit
-  :gerbil/gambit/bits
-  :gerbil/gambit/misc
-  :gerbil/gambit/os
-  :gerbil/gambit/ports
-  :gerbil/gambit/threads
   :ober/oberlib
   :std/coroutine
   :std/crypto/cipher
@@ -32,7 +27,7 @@
   :std/text/base64
   :std/text/json
   :std/text/utf8
-  :std/text/yaml
+  :clan/text/yaml
   :ober/slack/client)
 
 (declare (not optimize-dead-definitions))
