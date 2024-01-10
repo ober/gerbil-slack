@@ -29,3 +29,4 @@ jobs:
         upload_url: ${{ github.event.release.upload_url }}
         asset_path: .gerbil/bin/slack
         asset_name: slack
+        asset_content_type: application/zip
