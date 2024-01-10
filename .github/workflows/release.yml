@@ -1,15 +1,33 @@
+name: release
+
 on:
   push:
     tags:
-      - '*'
+      - 'v[0-9]+.[0-9]+(.[0-9]+)?'
 
-- name: build artifacts
-    run: make
-  - name: upload linux artifact
-    uses: actions/upload-release-asset@v1
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
-    with:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      asset_path: .gerbil/bin/slack
-      asset_name: slack
+jobs:
+  build_release:
+    name: build_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: release
+        uses: actions/create-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          release_name: ${{ steps.version.outputs.version }}
+          tag_name: ${{ github.ref }}
+          body_path: CHANGELOG.md
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: build artifacts
+        run: make
+      - name: upload linux artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: .gerbil/bin/slack
+          asset_name: slack
