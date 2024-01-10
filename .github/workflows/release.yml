@@ -9,16 +9,6 @@ jobs:
     name: build_release
     runs-on: ubuntu-latest
     steps:
-      - name: release
-        uses: actions/create-release@v1
-        id: create_release
-        with:
-          draft: false
-          prerelease: false
-          release_name: ${{ github.ref }}
-          tag_name: ${{ github.ref }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
       - name: build artifacts
         run: make
       - name: upload linux artifact
