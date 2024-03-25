@@ -39,7 +39,7 @@
           (error body))
         (pi body)
         (let ((body2 (car body)))
-          (when (table? body2)
+          (when (hash-table? body2)
             (pi body2)
             (let-hash body2
               .?channels)))))))
@@ -71,7 +71,7 @@
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           (let-hash body
             (when .?messages
               (for (message .messages)
@@ -100,7 +100,7 @@
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           (let-hash body
             (displayln "|name|creator|is_group|purpose|members|created|name2|id |is_archived|is_mpim|topic|priority|")
             (displayln "|--|-------|-----|-------------|----|---------------|--------|")
@@ -144,7 +144,7 @@
     (with ([status body] (rest-call 'post url (default-headers) data))
       (unless status
         (error body))
-      (when (table? body)
+      (when (hash-table? body)
         (let-hash body
           (when .?channel
             (let-hash .channel
@@ -188,7 +188,7 @@
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           (let-hash body
             (if .?messages
               (let-hash .?messages
@@ -213,7 +213,7 @@
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           (let-hash body
             .?groups))))))
 
@@ -229,7 +229,7 @@
         (unless status
           (pi "boom")
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           (let-hash body
             .?members))))))
 
@@ -277,7 +277,7 @@
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           body)))))
 
 (def (channels)
@@ -307,7 +307,7 @@
           (with ([ status body ] (rest-call 'get url (default-headers)))
             (unless status
               (error body))
-            (when (table? body)
+            (when (hash-table? body)
               (let-hash body
                 (when .?messages
                   (for (message .messages)
@@ -334,7 +334,7 @@
       (with ([ status body ] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           (let-hash body
             (when .?messages
               (for (message .messages)
@@ -354,7 +354,7 @@
       (print-channel channel))))
 
 (def (print-channel channel)
-  (if (table? channel)
+  (if (hash-table? channel)
     (let-hash channel
       (displayln "is_channel: " .?is_channel
                  " created: " .?created
@@ -382,7 +382,7 @@
     (with ([status body] (rest-call 'post url (default-headers) data))
       (unless status
         (error body))
-      (when (table? body)
+      (when (hash-table? body)
         (let-hash body
           (present-item body))))))
 
@@ -392,7 +392,7 @@
       (with ([status body] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           (let-hash body
             (present-item body)))))))
 
@@ -401,7 +401,7 @@
         (config-data (yaml-load config-file)))
     (unless (and (list? config-data)
                  (length>n? config-data 0)
-                 (table? (car config-data)))
+                 (hash-table? (car config-data)))
       (displayln (format "Could not parse your config ~a" config-file))
       (exit 2))
 
@@ -425,7 +425,7 @@
         (config-data (yaml-load config-file)))
     (unless (and (list? config-data)
                  (length>n? config-data 0)
-                 (table? (car config-data)))
+                 (hash-table? (car config-data)))
       (displayln (format "Could not parse your config ~a" config-file))
       (exit 2))
 
@@ -500,7 +500,7 @@
       (with ([ status body ] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           (present-item body))))))
 
 (def (rtm-start)
@@ -509,11 +509,11 @@
       (with ([ status body ] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           (let-hash body
             (displayln "self: " (hash->list .self))
             (displayln "OK: " .ok)
-            (displayln "dnd: " (if (and .?dnd (table? .?dnd)) (hash->list .dnd)))
+            (displayln "dnd: " (if (and .?dnd (hash-table? .?dnd)) (hash->list .dnd)))
             (displayln "url: " .?url)
             (displayln "Channels: ------------------------------------------------------------")
             (print-channels .?channels)
@@ -557,7 +557,7 @@
   "Take a group and whisper the message to each member in the channel"
   (let-hash (load-config)
     (when .?groups
-      (when (table? .groups)
+      (when (hash-table? .groups)
         (if (hash-ref .groups group)
           (for (user (hash-ref .groups group))
             (whisper user channel message))
@@ -584,7 +584,7 @@
       (with ([ status body ] (rest-call 'get url (default-headers)))
         (unless status
           (error body))
-        (when (table? body)
+        (when (hash-table? body)
           (let-hash body
             (displayln (format "~a is currently ~a" user .presence))))))))
 
