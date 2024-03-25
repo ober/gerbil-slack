@@ -2,7 +2,7 @@ PROJECT := slack
 
 NAME := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 ARCH := $(shell uname -m)
-DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)"
+DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)-master"
 
 default: linux-static-docker
 
