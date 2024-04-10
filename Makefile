@@ -2,7 +2,9 @@ PROJECT := slack
 
 NAME := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 ARCH := $(shell uname -m)
+PWD := $(shell pwd)
 DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)-master"
+
 
 default: linux-static-docker
 
@@ -19,6 +21,8 @@ linux-static-docker: clean
 	docker run -t \
 	-e GERBIL_PATH=/src/.gerbil \
 	-e USER=$(USER) \
+	-e UID=$(id -u) \
+	-e GID=$(id -g) \
 	-v $(PWD):/src:z \
 	$(DOCKER_IMAGE) \
 	make -C /src build
