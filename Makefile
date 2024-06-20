@@ -7,11 +7,16 @@ GID := $(shell id -g)
 
 default: linux-static-docker
 
+check-root:
+	@if [ "${UID}" -eq 0 ]; then \
+	git config --global --add safe.directory /src; \
+	fi
+
 deps:
 	$(GERBIL_HOME)/bin/gxpkg install github.com/mighty-gerbils/gerbil-libyaml
 	$(GERBIL_HOME)/bin/gxpkg install github.com/ober/oberlib
 
-build: deps
+build: deps check-root
 	$(GERBIL_HOME)/bin/gxpkg link $(PROJECT) /src || true
 	$(GERBIL_HOME)/bin/gxpkg build -R $(PROJECT)
 
