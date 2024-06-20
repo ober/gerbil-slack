@@ -1,6 +1,4 @@
 PROJECT := slack
-
-NAME := $(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 ARCH := $(shell uname -m)
 PWD := $(shell pwd)
 DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)-master"
@@ -10,23 +8,22 @@ GID := $(shell id -g)
 default: linux-static-docker
 
 deps:
-	/opt/gerbil/bin/gxpkg install github.com/mighty-gerbils/gerbil-libyaml
-	/opt/gerbil/bin/gxpkg install github.com/ober/oberlib
+	$(GERBIL_HOME)/bin/gxpkg install github.com/mighty-gerbils/gerbil-libyaml
+	$(GERBIL_HOME)/bin/gxpkg install github.com/ober/oberlib
 
 build: deps
-	/opt/gerbil/bin/gxpkg link $(PROJECT) /src || true
-	/opt/gerbil/bin/gxpkg build -R $(PROJECT)
+	$(GERBIL_HOME)/bin/gxpkg link $(PROJECT) /src || true
+	$(GERBIL_HOME)/bin/gxpkg build -R $(PROJECT)
 
 linux-static-docker: clean
 	docker run -t \
-	-e GERBIL_PATH=/src/.gerbil \
 	-u "$(UID):$(GID)" \
 	-v $(PWD):/src:z \
 	$(DOCKER_IMAGE) \
 	make -C /src build
 
 clean:
-	rm -rf .gerbil
+	rm -rf .gerbil manifest.ss
 
 install:
 	mv .gerbil/bin/$(PROJECT) /usr/local/bin/$(PROJECT)
