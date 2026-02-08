@@ -31,4 +31,5 @@
     (exe: "slack/slack")
     "slack/gui/theme"
     "slack/gui/app"
-    "slack/gui/sidebar"))
+    "slack/gui/sidebar"
+    "slack/gui/channel-view"))
