@@ -23,6 +23,12 @@
 (def *message-input* #f)
 (def *send-button* #f)
 
+;; Callback hooks — set by other modules to avoid circular imports
+(def *on-search-requested* (void))     ; (lambda () ...)
+(def *on-preferences-requested* (void)) ; (lambda () ...)
+(def *on-channel-info-requested* (void)) ; (lambda () ...)
+(def *on-upload-requested* (void))     ; (lambda () ...)
+
 ;;;; Main Entry Point
 
 (def (main . args)
@@ -218,7 +224,20 @@
 
     ;; File menu
     (let ((file-menu (qt-menu-bar-add-menu menubar "File")))
+      (let ((search-action (qt-action-create "Search...")))
+        (qt-action-set-shortcut! search-action "Ctrl+F")
+        (qt-on-triggered! search-action
+          (lambda () (when (procedure? *on-search-requested*) (*on-search-requested*))))
+        (qt-menu-add-action! file-menu search-action))
+      (let ((upload-action (qt-action-create "Upload File...")))
+        (qt-on-triggered! upload-action
+          (lambda () (when (procedure? *on-upload-requested*) (*on-upload-requested*))))
+        (qt-menu-add-action! file-menu upload-action))
+      (qt-menu-add-separator! file-menu)
       (let ((prefs-action (qt-action-create "Preferences...")))
+        (qt-action-set-shortcut! prefs-action "Ctrl+,")
+        (qt-on-triggered! prefs-action
+          (lambda () (when (procedure? *on-preferences-requested*) (*on-preferences-requested*))))
         (qt-menu-add-action! file-menu prefs-action))
       (qt-menu-add-separator! file-menu)
       (let ((quit-action (qt-action-create "Quit")))
@@ -229,6 +248,8 @@
     ;; Channel menu
     (let ((channel-menu (qt-menu-bar-add-menu menubar "Channel")))
       (let ((info-action (qt-action-create "Channel Info")))
+        (qt-on-triggered! info-action
+          (lambda () (when (procedure? *on-channel-info-requested*) (*on-channel-info-requested*))))
         (qt-menu-add-action! channel-menu info-action))
       (let ((members-action (qt-action-create "Members")))
         (qt-menu-add-action! channel-menu members-action))
@@ -256,7 +277,12 @@
   "Show about dialog."
   (qt-message-box-information *main-window*
     "About Gerbil Slack"
-    "Gerbil Slack v0.2.0\n\nA Slack client built with Gerbil Scheme and Qt."))
+    (string-append "Gerbil Slack v" version
+                   "\n\nA Slack client built with Gerbil Scheme and Qt."
+                   "\n\nKeyboard shortcuts:"
+                   "\n  Ctrl+F    Search"
+                   "\n  Ctrl+,    Preferences"
+                   "\n  Ctrl+Q    Quit")))
 
 ;;;; Public API
 
