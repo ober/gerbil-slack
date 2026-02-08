@@ -32,4 +32,5 @@
     "slack/gui/theme"
     "slack/gui/app"
     "slack/gui/sidebar"
-    "slack/gui/channel-view"))
+    "slack/gui/channel-view"
+    "slack/gui/input-bar"))
