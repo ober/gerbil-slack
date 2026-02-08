@@ -24,5 +24,6 @@
     "slack/events"
     "slack/socket"
     "slack/cache"
+    "slack/markdown"
     "slack/client"
     (exe: "slack/slack")))

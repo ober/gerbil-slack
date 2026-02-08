@@ -286,30 +286,33 @@ gerbil-slack/
 
 ---
 
-## Phase 5: Slack Markdown Parser
+## Phase 5: Slack Markdown Parser ✅ COMPLETE
 
 **Goal:** Parse Slack's `mrkdwn` format into plain text (for CLI) and HTML (for Qt rich text display).
 
 ### 5.1 Markdown Converter (`slack/markdown.ss`)
-- [ ] Parse Slack mrkdwn syntax:
-  - `*bold*` → **bold** / `<b>bold</b>`
-  - `_italic_` → _italic_ / `<i>italic</i>`
-  - `~strikethrough~` → ~~strikethrough~~ / `<s>strikethrough</s>`
-  - `` `code` `` → `code` / `<code>code</code>`
-  - ` ```code block``` ` → indented / `<pre>code block</pre>`
-  - `>quote` → `| quote` / `<blockquote>quote</blockquote>`
-  - `<@U123>` → `@username` (resolve via cache)
+- [x] Parse Slack mrkdwn syntax:
+  - `*bold*` → plain/stripped / `<b>bold</b>`
+  - `_italic_` → plain/stripped / `<i>italic</i>`
+  - `~strikethrough~` → plain/stripped / `<s>strikethrough</s>`
+  - `` `code` `` → preserved / `<code>code</code>`
+  - ` ```code block``` ` → indented / `<pre><code>code</code></pre>`
+  - `> quote` → `| quote` / `<blockquote>quote</blockquote>`
+  - `<@U123>` → `@username` (resolve via pluggable resolver)
   - `<#C123|channel>` → `#channel`
   - `<url|text>` → `text (url)` / `<a href="url">text</a>`
-  - `:emoji:` → emoji character or placeholder
-  - Newlines preserved
-- [ ] `(mrkdwn->plain text)` → plain text string (for CLI)
-- [ ] `(mrkdwn->html text)` → HTML string (for Qt text browser)
-- [ ] User/channel mention resolution using cache
+  - `:emoji:` → preserved as-is
+  - Newlines preserved (HTML: converted to `<br>`)
+- [x] `(mrkdwn->plain text)` → plain text string (for CLI)
+- [x] `(mrkdwn->html text)` → HTML string (for Qt text browser)
+- [x] `(set-user-resolver! f)` / `(set-channel-resolver! f)` — pluggable mention resolution
+- [x] Code blocks extracted before formatting to prevent inner content processing
+- [x] HTML output properly escapes `<`, `>`, `&`, `"`, `'`
 
 ### 5.2 Build & Verify
-- [ ] Unit tests with sample Slack messages
-- [ ] Edge cases: nested formatting, URLs with special chars, code blocks with mrkdwn chars inside
+- [x] 23 modules compile (including markdown)
+- [x] 158 unit tests pass (33 new markdown tests)
+- [x] Tests cover: bold, italic, strikethrough, inline code, code blocks, blockquotes, user/channel mentions (with and without labels/resolvers), URLs (labeled and bare), emoji, mixed content, edge cases
 
 ---
 

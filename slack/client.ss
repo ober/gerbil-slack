@@ -21,7 +21,8 @@
   :ober/slack/api/bookmarks
   :ober/slack/events
   :ober/slack/socket
-  :ober/slack/cache)
+  :ober/slack/cache
+  :ober/slack/markdown)
 
 (export
   (import: :ober/slack/types)
@@ -43,4 +44,5 @@
   (import: :ober/slack/api/bookmarks)
   (import: :ober/slack/events)
   (import: :ober/slack/socket)
-  (import: :ober/slack/cache))
+  (import: :ober/slack/cache)
+  (import: :ober/slack/markdown))
