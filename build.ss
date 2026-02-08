@@ -28,4 +28,6 @@
     "slack/cli/format"
     "slack/cli/commands"
     "slack/client"
-    (exe: "slack/slack")))
+    (exe: "slack/slack")
+    "slack/gui/theme"
+    "slack/gui/app"))

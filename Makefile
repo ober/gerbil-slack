@@ -5,6 +5,7 @@ GERBIL_HOME := /opt/gerbil
 DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)-master"
 UID := $(shell id -u)
 GID := $(shell id -g)
+GERBIL_LOADPATH_EXTRA := $(HOME)/.gerbil/lib
 
 default: build
 
@@ -14,7 +15,7 @@ check-root:
 	fi
 
 build: check-root
-	gerbil build
+	GERBIL_LOADPATH="$(GERBIL_LOADPATH_EXTRA)" gerbil build
 
 test:
 	gerbil test ./...
