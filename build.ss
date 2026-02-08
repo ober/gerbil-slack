@@ -30,4 +30,5 @@
     "slack/client"
     (exe: "slack/slack")
     "slack/gui/theme"
-    "slack/gui/app"))
+    "slack/gui/app"
+    "slack/gui/sidebar"))

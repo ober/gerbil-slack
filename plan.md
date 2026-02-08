@@ -494,29 +494,30 @@ Using `:std/getopt` with subcommand dispatch via `rest-arguments` pattern:
 **Goal:** Populate sidebar with channels and DMs from cache/API.
 
 ### 8.1 Sidebar Widget (`slack/gui/sidebar.ss`)
-- [ ] Team header at top (team name + icon)
-- [ ] "Channels" section with collapsible header
-  - List all public/private channels user is member of
-  - Bold unread channels
-  - `#` prefix for public, `🔒` for private
-  - Click to switch active channel
-- [ ] "Direct Messages" section with collapsible header
-  - List DMs sorted by recent activity
-  - Show presence indicator (green dot = active, hollow = away)
-  - Show user's display name
+- [x] Team header at top (team name fetched via team-info, sets window title)
+- [x] "Channels" section
+  - List all public/private channels (non-archived)
+  - `#` prefix for public channels in display
+  - Click to switch active channel via `qt-on-current-row-changed!`
+- [x] "Direct Messages" section
+  - List DMs and MPIMs (non-archived)
   - Click to switch active DM
-- [ ] Search/filter input at top of sidebar
-- [ ] Right-click context menu: Mark as Read, Mute, Leave Channel
-- [ ] Current channel highlighted with accent color
-- [ ] `(sidebar-refresh!)` — reload channels list from API/cache
-- [ ] `(sidebar-set-active! channel-id)` — highlight selected channel
-- [ ] Signal: channel selection changed → load messages for that channel
+- [x] Search/filter input at top of sidebar (uses `qt-on-text-changed!` + `string-contains`)
+- [ ] Right-click context menu (deferred to Phase 17 polish)
+- [x] Current channel highlighted with accent color (via list widget selection)
+- [x] `(sidebar-refresh!)` — reload channels from cache/API, repopulate lists
+- [x] `(sidebar-set-active! channel-id)` — highlight selected channel/DM
+- [x] Signal: channel selection changed → invokes `*on-channel-selected*` callback
+- [x] `(sidebar-init! on-select)` — wire all signals, set callback
+- [ ] Bold unread channels (deferred to Phase 11 real-time)
+- [ ] Presence indicators (deferred to Phase 11 real-time)
 
 ### 8.2 Build & Verify
-- [ ] Channels and DMs appear in sidebar from live API data
-- [ ] Clicking a channel fires selection signal
-- [ ] Filter narrows list
-- [ ] Presence dots display correctly
+- [x] Channels and DMs appear in sidebar from cache/API data
+- [x] Clicking a channel fires selection callback
+- [x] Filter narrows list
+- [x] Compiles without warnings
+- **Note:** Theme color constants renamed with `clr-` prefix to avoid import conflicts with types module (`message-text` etc.). Presence indicators and unread bolding deferred to Phase 11 (Real-Time Integration) since they require Socket Mode events.
 
 ---
 

@@ -1,5 +1,6 @@
 ;; -*- Gerbil -*-
 ;; Slack-inspired theme: colors, fonts, stylesheet helpers
+;; Color constants are prefixed with clr- to avoid import conflicts with types module.
 
 (import :gerbil-qt/qt)
 
@@ -8,35 +9,35 @@
 ;;;; Color Palette (Slack-inspired)
 
 ;; Sidebar
-(def sidebar-bg "#3F0E40")
-(def sidebar-text "#FFFFFF")
-(def sidebar-text-dim "#CFC3CF")
-(def sidebar-selected "#1264A3")
-(def sidebar-hover "#350D36")
-(def sidebar-border "#522653")
+(def clr-sidebar-bg "#3F0E40")
+(def clr-sidebar-text "#FFFFFF")
+(def clr-sidebar-text-dim "#CFC3CF")
+(def clr-sidebar-selected "#1264A3")
+(def clr-sidebar-hover "#350D36")
+(def clr-sidebar-border "#522653")
 
 ;; Message area
-(def message-bg "#FFFFFF")
-(def message-text "#1D1C1D")
-(def message-text-dim "#616061")
-(def message-link "#1264A3")
-(def message-border "#DDDDDD")
+(def clr-message-bg "#FFFFFF")
+(def clr-message-text "#1D1C1D")
+(def clr-message-text-dim "#616061")
+(def clr-message-link "#1264A3")
+(def clr-message-border "#DDDDDD")
 
 ;; Input area
-(def input-bg "#FFFFFF")
-(def input-border "#DDDDDD")
-(def input-focus-border "#1264A3")
+(def clr-input-bg "#FFFFFF")
+(def clr-input-border "#DDDDDD")
+(def clr-input-focus-border "#1264A3")
 
 ;; Accents
-(def accent-blue "#1264A3")
-(def accent-green "#007A5A")
-(def accent-red "#E01E5A")
-(def accent-yellow "#ECB22E")
+(def clr-accent-blue "#1264A3")
+(def clr-accent-green "#007A5A")
+(def clr-accent-red "#E01E5A")
+(def clr-accent-yellow "#ECB22E")
 
 ;; Status bar
-(def status-bg "#F8F8F8")
-(def status-border "#E8E8E8")
-(def status-text "#616061")
+(def clr-status-bg "#F8F8F8")
+(def clr-status-border "#E8E8E8")
+(def clr-status-text "#616061")
 
 ;;;; Widget Style Helpers
 
@@ -44,7 +45,7 @@
   "Apply sidebar styling to a container widget."
   (qt-widget-set-style-sheet! widget
     (string-append
-     "background-color: " sidebar-bg ";")))
+     "background-color: " clr-sidebar-bg ";")))
 
 (def (style-sidebar-list! widget)
   "Apply sidebar list styling."
@@ -54,36 +55,36 @@
      "  background-color: transparent;"
      "  border: none;"
      "  outline: none;"
-     "  color: " sidebar-text-dim ";"
+     "  color: " clr-sidebar-text-dim ";"
      "}"
      "QListWidget::item {"
      "  padding: 4px 16px;"
      "  border: none;"
      "}"
      "QListWidget::item:selected {"
-     "  background-color: " sidebar-selected ";"
-     "  color: " sidebar-text ";"
+     "  background-color: " clr-sidebar-selected ";"
+     "  color: " clr-sidebar-text ";"
      "}"
      "QListWidget::item:hover {"
-     "  background-color: " sidebar-hover ";"
+     "  background-color: " clr-sidebar-hover ";"
      "}")))
 
 (def (style-sidebar-search! widget)
   "Apply sidebar search input styling."
   (qt-widget-set-style-sheet! widget
     (string-append
-     "background-color: " sidebar-hover ";"
-     "border: 1px solid " sidebar-border ";"
+     "background-color: " clr-sidebar-hover ";"
+     "border: 1px solid " clr-sidebar-border ";"
      "border-radius: 4px;"
      "padding: 4px 8px;"
-     "color: " sidebar-text ";"
+     "color: " clr-sidebar-text ";"
      "font-size: 12px;")))
 
 (def (style-sidebar-label! widget)
   "Apply sidebar section label styling."
   (qt-widget-set-style-sheet! widget
     (string-append
-     "color: " sidebar-text-dim ";"
+     "color: " clr-sidebar-text-dim ";"
      "background: transparent;"
      "font-size: 11px;"
      "font-weight: bold;"
@@ -93,7 +94,7 @@
   "Apply sidebar team header styling."
   (qt-widget-set-style-sheet! widget
     (string-append
-     "color: " sidebar-text ";"
+     "color: " clr-sidebar-text ";"
      "background: transparent;"
      "font-size: 15px;"
      "font-weight: bold;"
@@ -103,14 +104,14 @@
   "Apply channel header bar styling."
   (qt-widget-set-style-sheet! widget
     (string-append
-     "background-color: " message-bg ";"
-     "border-bottom: 1px solid " message-border ";")))
+     "background-color: " clr-message-bg ";"
+     "border-bottom: 1px solid " clr-message-border ";")))
 
 (def (style-channel-name! widget)
   "Apply channel name label styling."
   (qt-widget-set-style-sheet! widget
     (string-append
-     "color: " message-text ";"
+     "color: " clr-message-text ";"
      "background: transparent;"
      "font-size: 16px;"
      "font-weight: bold;"
@@ -120,7 +121,7 @@
   "Apply channel topic label styling."
   (qt-widget-set-style-sheet! widget
     (string-append
-     "color: " message-text-dim ";"
+     "color: " clr-message-text-dim ";"
      "background: transparent;"
      "font-size: 12px;"
      "padding: 0 16px 8px 16px;")))
@@ -130,9 +131,9 @@
   (qt-widget-set-style-sheet! widget
     (string-append
      "QTextBrowser {"
-     "  background-color: " message-bg ";"
+     "  background-color: " clr-message-bg ";"
      "  border: none;"
-     "  color: " message-text ";"
+     "  color: " clr-message-text ";"
      "  font-size: 14px;"
      "}")))
 
@@ -140,23 +141,23 @@
   "Apply input container styling."
   (qt-widget-set-style-sheet! widget
     (string-append
-     "background-color: " message-bg ";"
-     "border-top: 1px solid " message-border ";")))
+     "background-color: " clr-message-bg ";"
+     "border-top: 1px solid " clr-message-border ";")))
 
 (def (style-message-input! widget)
   "Apply message input box styling."
   (qt-widget-set-style-sheet! widget
     (string-append
      "QPlainTextEdit {"
-     "  background-color: " input-bg ";"
-     "  border: 1px solid " input-border ";"
+     "  background-color: " clr-input-bg ";"
+     "  border: 1px solid " clr-input-border ";"
      "  border-radius: 4px;"
      "  padding: 8px;"
-     "  color: " message-text ";"
+     "  color: " clr-message-text ";"
      "  font-size: 14px;"
      "}"
      "QPlainTextEdit:focus {"
-     "  border-color: " input-focus-border ";"
+     "  border-color: " clr-input-focus-border ";"
      "}")))
 
 (def (style-send-button! widget)
@@ -164,7 +165,7 @@
   (qt-widget-set-style-sheet! widget
     (string-append
      "QPushButton {"
-     "  background-color: " accent-green ";"
+     "  background-color: " clr-accent-green ";"
      "  color: white;"
      "  border: none;"
      "  border-radius: 4px;"
@@ -180,32 +181,32 @@
   (string-append
    ;; Menu bar
    "QMenuBar {"
-   "  background-color: " sidebar-bg ";"
-   "  color: " sidebar-text ";"
-   "  border-bottom: 1px solid " sidebar-border ";"
+   "  background-color: " clr-sidebar-bg ";"
+   "  color: " clr-sidebar-text ";"
+   "  border-bottom: 1px solid " clr-sidebar-border ";"
    "}"
-   "QMenuBar::item:selected { background-color: " sidebar-hover "; }"
+   "QMenuBar::item:selected { background-color: " clr-sidebar-hover "; }"
    "QMenu {"
-   "  background-color: " message-bg ";"
-   "  color: " message-text ";"
-   "  border: 1px solid " message-border ";"
+   "  background-color: " clr-message-bg ";"
+   "  color: " clr-message-text ";"
+   "  border: 1px solid " clr-message-border ";"
    "}"
    "QMenu::item:selected {"
-   "  background-color: " accent-blue ";"
+   "  background-color: " clr-accent-blue ";"
    "  color: white;"
    "}"
 
    ;; Status bar
    "QStatusBar {"
-   "  background-color: " status-bg ";"
-   "  border-top: 1px solid " status-border ";"
-   "  color: " status-text ";"
+   "  background-color: " clr-status-bg ";"
+   "  border-top: 1px solid " clr-status-border ";"
+   "  color: " clr-status-text ";"
    "  font-size: 11px;"
    "}"
 
    ;; Splitter
    "QSplitter::handle {"
-   "  background-color: " message-border ";"
+   "  background-color: " clr-message-border ";"
    "  width: 1px;"
    "}"
 
