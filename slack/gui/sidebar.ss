@@ -28,36 +28,54 @@
 ;; signature: (lambda (channel-id) ...)
 (def *on-channel-selected* #f)
 
+;; Handler IDs for cleanup (prevent accumulation on re-init)
+(def *handler-channel-row* #f)
+(def *handler-dm-row* #f)
+(def *handler-search-text* #f)
+
+;; Completer for sidebar search
+(def *sidebar-completer* #f)
+
 ;;;; Public API
 
 (def (sidebar-init! (on-select #f))
   "Initialize sidebar: wire signals, set selection callback."
   (set! *on-channel-selected* on-select)
+  ;; Clean up previous handlers to prevent accumulation
+  (when *handler-channel-row* (unregister-qt-handler! *handler-channel-row*))
+  (when *handler-dm-row* (unregister-qt-handler! *handler-dm-row*))
+  (when *handler-search-text* (unregister-qt-handler! *handler-search-text*))
   ;; Wire channel list selection
   (when *channel-list*
-    (qt-on-current-row-changed! *channel-list*
-      (lambda (row)
-        (when (and (>= row 0) (< row (length *channel-entries*)))
-          (let ((ch (list-ref *channel-entries* row)))
-            (set! *active-channel-id* (channel-id ch))
-            (when *on-channel-selected*
-              (*on-channel-selected* (channel-id ch))))))))
+    (set! *handler-channel-row*
+      (qt-on-current-row-changed! *channel-list*
+        (lambda (row)
+          (when (and (>= row 0) (< row (length *channel-entries*)))
+            (let ((ch (list-ref *channel-entries* row)))
+              (set! *active-channel-id* (channel-id ch))
+              (when *on-channel-selected*
+                (*on-channel-selected* (channel-id ch)))))))))
   ;; Wire DM list selection
   (when *dm-list*
-    (qt-on-current-row-changed! *dm-list*
-      (lambda (row)
-        (when (and (>= row 0) (< row (length *dm-entries*)))
-          (let ((ch (list-ref *dm-entries* row)))
-            (set! *active-channel-id* (channel-id ch))
-            ;; Deselect channel list when DM selected
-            (qt-list-widget-set-current-row! *channel-list* -1)
-            (when *on-channel-selected*
-              (*on-channel-selected* (channel-id ch))))))))
-  ;; Wire search filter
+    (set! *handler-dm-row*
+      (qt-on-current-row-changed! *dm-list*
+        (lambda (row)
+          (when (and (>= row 0) (< row (length *dm-entries*)))
+            (let ((ch (list-ref *dm-entries* row)))
+              (set! *active-channel-id* (channel-id ch))
+              ;; Deselect channel list when DM selected
+              (qt-list-widget-set-current-row! *channel-list* -1)
+              (when *on-channel-selected*
+                (*on-channel-selected* (channel-id ch)))))))))
+  ;; Wire search filter with completer
   (when *sidebar-search*
-    (qt-on-text-changed! *sidebar-search*
-      (lambda (text)
-        (sidebar-filter! text)))))
+    (set! *handler-search-text*
+      (qt-on-text-changed! *sidebar-search*
+        (lambda (text)
+          (sidebar-filter! text)))))
+  ;; Setup completer for sidebar search
+  (when *sidebar-search*
+    (sidebar-update-completer!)))
 
 (def (sidebar-refresh!)
   "Reload channels and DMs from cache (or API if stale), and repopulate the lists."
@@ -72,6 +90,8 @@
     ;; Populate DM list
     (set! *dm-entries* dms)
     (populate-dm-list! *dm-list* dms)
+    ;; Update search completer with new channel names
+    (sidebar-update-completer!)
     ;; Restore selection if we had one
     (when *active-channel-id*
       (sidebar-set-active! *active-channel-id*))))
@@ -185,3 +205,16 @@
     (catch (e)
       ;; If team-info fails (no token, network), silently ignore
       (void))))
+
+(def (sidebar-update-completer!)
+  "Update the sidebar search completer with current channel/DM names."
+  (when *sidebar-search*
+    (let ((names (append
+                   (map (lambda (ch) (or (channel-name ch) "")) *channel-entries*)
+                   (map (lambda (ch) (or (channel-name ch) "")) *dm-entries*))))
+      (unless *sidebar-completer*
+        (set! *sidebar-completer* (qt-completer-create *sidebar-search*))
+        (qt-completer-set-case-sensitivity! *sidebar-completer* QT_CASE_INSENSITIVE)
+        (qt-completer-set-filter-mode! *sidebar-completer* QT_MATCH_CONTAINS)
+        (qt-line-edit-set-completer! *sidebar-search* *sidebar-completer*))
+      (qt-completer-set-model-strings! *sidebar-completer* names))))

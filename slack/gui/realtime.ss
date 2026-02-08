@@ -21,6 +21,7 @@
 (def *event-queue* [])
 (def *event-mutex* (make-mutex 'event-queue))
 (def *poll-timer* #f)
+(def *poll-timer-handler* #f)  ;; handler ID for cleanup
 
 (def (enqueue-gui-event! thunk)
   "Push a GUI update thunk onto the queue (called from background thread)."
@@ -46,11 +47,16 @@
   "Start Socket Mode and begin routing events to GUI."
   ;; Register event handlers that queue GUI updates
   (register-gui-event-handlers!)
+  ;; Clean up previous timer handler if re-starting
+  (when (and *poll-timer* *poll-timer-handler*)
+    (unregister-qt-handler! *poll-timer-handler*)
+    (qt-timer-stop! *poll-timer*))
   ;; Start polling timer (100ms interval)
-  (let ((timer (qt-timer-create)))
+  (let ((timer (or *poll-timer* (qt-timer-create))))
     (set! *poll-timer* timer)
     (qt-timer-set-interval! timer 100)
-    (qt-on-timeout! timer (lambda () (drain-gui-events!)))
+    (set! *poll-timer-handler*
+      (qt-on-timeout! timer (lambda () (drain-gui-events!))))
     (qt-timer-start! timer 100))
   ;; Start Socket Mode
   (let ((app-token (getenv "SLACK_APP_TOKEN" #f)))
@@ -64,6 +70,9 @@
   "Stop Socket Mode and polling timer."
   (socket-mode-stop!)
   (when *poll-timer*
+    (when *poll-timer-handler*
+      (unregister-qt-handler! *poll-timer-handler*)
+      (set! *poll-timer-handler* #f))
     (qt-timer-stop! *poll-timer*)
     (set! *poll-timer* #f)))
 

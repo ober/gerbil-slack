@@ -27,6 +27,8 @@
   "Load and display messages for a channel. Called when user selects a channel."
   (set! *current-channel-id* channel-id)
   (set! *oldest-ts* #f)
+  ;; Show loading progress
+  (channel-view-show-progress!)
   ;; Update channel header
   (update-channel-header! channel-id)
   ;; Load messages: try cache first, then API
@@ -38,7 +40,9 @@
     (render-messages! messages)
     ;; Scroll to bottom
     (when *message-browser*
-      (qt-text-browser-scroll-to-bottom! *message-browser*))))
+      (qt-text-browser-scroll-to-bottom! *message-browser*))
+    ;; Hide progress
+    (channel-view-hide-progress!)))
 
 (def (channel-view-load-older!)
   "Load older messages (pagination). Prepends to current view."
@@ -338,3 +342,29 @@
                   ((#\&) "&amp;")
                   ((#\") "&quot;")
                   (else (string c)))))))))
+
+;;;; Clipboard Support
+
+(def (channel-view-copy-selected!)
+  "Copy selected text from the message browser to clipboard."
+  (when *message-browser*
+    (let ((text (qt-text-browser-plain-text *message-browser*)))
+      (when (and text (> (string-length text) 0))
+        (qt-clipboard-set-text! *app* text)
+        (set-status! "Copied to clipboard")))))
+
+;;;; Progress Indication
+
+(def (channel-view-show-progress!)
+  "Show loading state."
+  (when *progress-bar*
+    (qt-progress-bar-set-range! *progress-bar* 0 0)  ;; indeterminate
+    (qt-widget-show! *progress-bar*))
+  (set-status! "Loading messages..."))
+
+(def (channel-view-hide-progress!)
+  "Hide loading state."
+  (when *progress-bar*
+    (qt-progress-bar-set-range! *progress-bar* 0 100)
+    (qt-progress-bar-set-value! *progress-bar* 100)
+    (qt-widget-hide! *progress-bar*)))

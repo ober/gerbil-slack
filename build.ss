@@ -30,6 +30,7 @@
     "slack/client"
     (exe: "slack/slack")
     "slack/gui/theme"
+    "slack/gui/settings"
     "slack/gui/app"
     "slack/gui/sidebar"
     "slack/gui/channel-view"
@@ -39,4 +40,5 @@
     "slack/gui/info-panels"
     "slack/gui/file-handler"
     "slack/gui/search-dialog"
-    "slack/gui/preferences"))
+    "slack/gui/preferences"
+    "slack/gui/tray"))
