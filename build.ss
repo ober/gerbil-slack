@@ -35,4 +35,8 @@
     "slack/gui/channel-view"
     "slack/gui/input-bar"
     "slack/gui/realtime"
-    "slack/gui/thread-view"))
+    "slack/gui/thread-view"
+    "slack/gui/info-panels"
+    "slack/gui/file-handler"
+    "slack/gui/search-dialog"
+    "slack/gui/preferences"))
