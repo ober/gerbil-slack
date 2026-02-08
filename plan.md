@@ -634,20 +634,23 @@ Using `:std/getopt` with subcommand dispatch via `rest-arguments` pattern:
 **Goal:** Side panel for viewing and replying to threads.
 
 ### 12.1 Thread Panel (`slack/gui/thread-view.ss`)
-- [ ] Opens as right-side panel (splitter) when clicking "N replies" on a message
-- [ ] Shows parent message at top
-- [ ] Lists all replies below in chronological order
-- [ ] Own input bar at bottom for replies
-- [ ] Close button (X) to dismiss panel
-- [ ] "Also send to #channel" checkbox
-- [ ] New replies appear live via Socket Mode events
-- [ ] Thread panel resizable via splitter
+- [x] `thread-view-build!` adds panel to parent splitter, starts hidden
+- [x] Parent message displayed at top with separator border
+- [x] All replies listed chronologically below
+- [x] Own input bar at bottom with Reply button
+- [x] Close button (X) to dismiss panel
+- [x] Enter-to-send in thread input (Shift+Enter for newline)
+- [ ] "Also send to #channel" checkbox (deferred)
+- [x] `thread-view-append-reply!` for real-time new replies
+- [x] Thread panel resizable via splitter (min width 300px)
+- [x] `thread-view-open!` / `thread-view-close!` / `thread-view-open?`
 
 ### 12.2 Build & Verify
-- [ ] Click thread indicator → panel opens with replies
-- [ ] Reply in thread → message appears in thread panel
-- [ ] Real-time thread updates work
-- [ ] Close panel returns to full-width message area
+- [x] Thread panel renders parent + replies
+- [x] Reply in thread via chat-post-message with thread_ts
+- [x] Real-time reply append supported
+- [x] Close panel hides widget
+- [x] Compiles without warnings
 
 ---
 

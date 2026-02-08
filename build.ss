@@ -34,4 +34,5 @@
     "slack/gui/sidebar"
     "slack/gui/channel-view"
     "slack/gui/input-bar"
-    "slack/gui/realtime"))
+    "slack/gui/realtime"
+    "slack/gui/thread-view"))
