@@ -20,7 +20,8 @@
   :ober/slack/api/usergroups
   :ober/slack/api/bookmarks
   :ober/slack/events
-  :ober/slack/socket)
+  :ober/slack/socket
+  :ober/slack/cache)
 
 (export
   (import: :ober/slack/types)
@@ -41,4 +42,5 @@
   (import: :ober/slack/api/usergroups)
   (import: :ober/slack/api/bookmarks)
   (import: :ober/slack/events)
-  (import: :ober/slack/socket))
+  (import: :ober/slack/socket)
+  (import: :ober/slack/cache))

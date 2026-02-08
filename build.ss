@@ -23,5 +23,6 @@
     "slack/api/bookmarks"
     "slack/events"
     "slack/socket"
+    "slack/cache"
     "slack/client"
     (exe: "slack/slack")))
