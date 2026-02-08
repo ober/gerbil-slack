@@ -21,5 +21,7 @@
     "slack/api/dnd"
     "slack/api/usergroups"
     "slack/api/bookmarks"
+    "slack/events"
+    "slack/socket"
     "slack/client"
     (exe: "slack/slack")))

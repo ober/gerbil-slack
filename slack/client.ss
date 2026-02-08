@@ -18,7 +18,9 @@
   :ober/slack/api/reminders
   :ober/slack/api/dnd
   :ober/slack/api/usergroups
-  :ober/slack/api/bookmarks)
+  :ober/slack/api/bookmarks
+  :ober/slack/events
+  :ober/slack/socket)
 
 (export
   (import: :ober/slack/types)
@@ -37,4 +39,6 @@
   (import: :ober/slack/api/reminders)
   (import: :ober/slack/api/dnd)
   (import: :ober/slack/api/usergroups)
-  (import: :ober/slack/api/bookmarks))
+  (import: :ober/slack/api/bookmarks)
+  (import: :ober/slack/events)
+  (import: :ober/slack/socket))
