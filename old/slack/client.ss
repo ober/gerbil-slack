@@ -1,0 +1,555 @@
+;; -*- Gerbil -*-
+;; ©ober 2021
+;; slack client library
+
+(import
+  :gerbil/gambit
+  :ober/oberlib
+  :std/crypto/cipher
+  :std/error
+  :std/format
+  :std/iter
+  :std/logger
+  :std/misc/list
+  :std/misc/ports
+  :std/pregexp
+  :std/srfi/13
+  :std/sugar
+  :std/text/base64
+  :std/text/json
+  :clan/text/yaml)
+
+(export #t)
+
+(def version "0.08")
+
+(def program-name "slack")
+(def config-file "~/.slack.yaml")
+
+;; Caches (populated on first use, valid for process lifetime)
+(def *config-cache* #f)
+(def *user-list-cache* #f)
+
+(def (get-chat-list)
+  (let (url "https://slack.com/api/conversations.list?type=im")
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (let-hash body
+          .?channels)))))
+
+(def (chats)
+  (let ((chats (get-chat-list))
+        (outs [[ "user" "id" "user-id" "priority" "is_user_deleted" "is_archived" "is_im" "created" "is_org_shared" ]]))
+    (when chats
+      (for (chat chats)
+        (let-hash chat
+          (set! outs (cons [
+                            (id-for-user .?user)
+                            .?id
+                            .?user
+                            .?priority
+                            .?is_user_deleted
+                            .?is_archived
+                            .?is_im
+                            .?created
+                            .?is_org_shared
+                            ] outs))))
+      (style-output outs))))
+
+(def (ghistory group)
+  (let ((url (format "https://slack.com/api/conversations.history?channel=~a&count=~a" group 2000))
+        (outs [[ "User" "Message" "ts" "team" ]]))
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (let-hash body
+          (when .?messages
+            (for (message .messages)
+              (let-hash message
+                (set! outs (cons [
+                                  (if .?user
+                                    (user-from-id .?user (users-hash))
+                                    .?user)
+                                  .?text
+                                  .?ts
+                                  .?team ] outs))))))))
+    (style-output outs)))
+
+(def (user user)
+  (let (url (format "https://slack.com/api/users.info?user=~a" user))
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (present-item body))))
+
+(def (groups)
+  (let (url "https://slack.com/api/conversations.list")
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (let-hash body
+          (displayln "|name|creator|is_group|purpose|members|created|name2|id |is_archived|is_mpim|topic|priority|")
+          (displayln "|--|-------|-----|-------------|----|---------------|--------|")
+          (when .?channels
+            (for (g .channels)
+              (let-hash g
+                (displayln "|" .?name_normalized
+                           "|" (if .?topic (hash-get .topic 'value) "")
+                           "|" .?creator
+                           "|" .?is_group
+                           "|" (if .?purpose (hash-get .purpose 'value) "")
+                           "|" .?members
+                           "|" .?created
+                           "|" .?name
+                           "|" .?id
+                           "|" .?is_archived
+                           "|" .?is_mpim
+                           "|" .?priority "|")))))))))
+
+(def (post channel message from)
+  (let* ((url "https://slack.com/api/chat.postMessage")
+         (msg (get-if-set-b64 "slackmsg" message))
+         (data (json-object->string
+                (hash
+                 ("as_user" #t)
+                 ("username" from)
+                 ("text" msg)
+                 ("channel" channel)))))
+    (with ([status body] (rest-call 'post url (default-headers) data))
+      (unless status
+        (error body))
+      (present-item body))))
+
+(def (im-open name)
+  (let* ((url "https://slack.com/api/conversations.open")
+         (id (id-for-user name))
+         (data (json-object->string
+                (hash
+                 ("users" [id])
+                 ("return_im" #t)))))
+    (with ([status body] (rest-call 'post url (default-headers) data))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (let-hash body
+          (when .?channel
+            (let-hash .channel
+              .id)))))))
+
+(def (msg user message)
+  (let-hash (load-config)
+    (let ((channel (im-open user))
+          (msg (get-if-set-b64 "slackmsg" message)))
+      (if channel
+        (displayln (post channel msg .username))
+        (displayln "Invalid user: " user)))))
+
+(def (emojis)
+  (let (url "https://slack.com/api/emoji.list")
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (present-item body))))
+
+(def (delete channel timestamp)
+  "Remove a message from a chat channel"
+  (let* ((url "https://slack.com/api/chat.delete")
+         (data (json-object->string
+                (hash
+                 ("as_user" #t)
+                 ("ts" timestamp)
+                 ("channel" channel)))))
+    (with ([status body] (rest-call 'post url (default-headers) data))
+      (unless status
+        (error body))
+      (present-item body))))
+
+(def (search query)
+  "Search all conversations for query"
+  (let ((url (format "https://slack.com/api/search.messages?count=~a&query=~a" 100 query))
+        (outs [[ "id" "channel" "Message" "channel-id" "ts" "type" "user" "permalink" ]]))
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (let-hash body
+          (when .?messages
+            (let-hash .messages
+              (when .?matches
+                (for (m .matches)
+                  (let-hash m
+                    (set! outs (cons [ (or .?username "Unknown")
+                                       (hash-get .channel 'name)
+                                       (or .?text "No Text")
+                                       (hash-get .channel 'id)
+                                       .?ts
+                                       .?type
+                                       .?user
+                                       .?permalink ] outs))))))))))
+    (style-output outs)))
+
+(def (get-group-list)
+  (let (url "https://slack.com/api/conversations.list")
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (let-hash body
+          .?channels)))))
+
+(def (gul)
+  (let ((group-list (get-group-list)))
+    (when group-list
+      (for (group group-list)
+        (present-item group)))))
+
+(def (get-user-list)
+  (or *user-list-cache*
+      (let ((result (fetch-user-list)))
+        (set! *user-list-cache* result)
+        result)))
+
+(def (fetch-user-list)
+  (let (url "https://slack.com/api/users.list")
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (let-hash body
+          .?members)))))
+
+(def (users)
+  (let* ((members (get-user-list))
+         (outs [[ "name" "real_name" "is_primary_owner" "is_ultra_restricted" "is_restricted" "team_id" "updated" "is_app_user" "profile" "id" "tz_label" ]]))
+    (when members
+      (for (user members)
+        (let-hash user
+          (set! outs (cons [
+                            .?name
+                            .?real_name
+                            .?is_primary_owner
+                            .?is_ultra_restricted
+                            .?is_restricted
+                            .?team_id
+                            .?updated
+                            .?is_app_user
+                            (if .?profile (hash->list .profile) [])
+                            .?id
+                            .?tz_label ] outs))))
+      (style-output outs))))
+
+(def (id-for-user username)
+  (let ((id #f)
+        (users (get-user-list)))
+    (when users
+      (for (user users)
+        (let-hash user
+          (when (string=? .name username)
+            (set! id .id)))))
+    id))
+
+(def (id-for-channel channel)
+  (let ((id #f)
+        (channel-data (get-channel-list)))
+    (when (hash-table? channel-data)
+      (let-hash channel-data
+        (when .?channels
+          (for (c .channels)
+            (let-hash c
+              (when (string=? .name channel)
+                (set! id .id)))))))
+    id))
+
+(def (get-channel-list)
+  (let (url "https://slack.com/api/conversations.list")
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        body))))
+
+(def (channels)
+  (let ((channel-data (get-channel-list)))
+    (when (hash-table? channel-data)
+      (let-hash channel-data
+        (print-channels .?channels)))))
+
+(def (users-hash)
+  (let ((users (hash))
+        (members (get-user-list)))
+    (when members
+      (for (member members)
+        (let-hash member
+          (hash-put! users (string->symbol .id) .name))))
+    users))
+
+(def (user-from-id id users-hash)
+  (if id
+    (hash-get users-hash (string->symbol id))
+    id))
+
+(def (im-history user)
+  (let ((outs [[ "User" "Datetime" "Message" "channel-id" "ts" "team" ]])
+        (members (users-hash))
+        (ts 0))
+    (let lp ((latest ts))
+      (let (url (format "https://slack.com/api/conversations.history?channel=~a&count=1000&latest=~a" user latest))
+        (with ([status body] (rest-call 'get url (default-headers)))
+          (unless status
+            (error body))
+          (when (hash-table? body)
+            (let-hash body
+              (when .?messages
+                (for (message .messages)
+                  (let-hash message
+                    (set! outs (cons [
+                                      (user-from-id .?user members)
+                                      (print-date (epoch->date (float->int (string->number .?ts))))
+                                      .?text
+                                      user
+                                      .?ts
+                                      .?team ] outs))
+                    (set! ts .?ts))))
+              (displayln (format "more: ~a latest: ~a" .?has_more .?latest))
+              (when .?has_more
+                (lp ts)))))))
+    (style-output outs)))
+
+(def (channel-history channel)
+  (let* ((users-hash (users-hash))
+         (id (id-for-channel channel))
+         (url (format "https://slack.com/api/conversations.history?channel=~a&count=1000" id))
+         (outs [[ "User" "Channel" "Message" "channel-id" "ts" "team" ]]))
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (let-hash body
+          (when .?messages
+            (for (message .messages)
+              (let-hash message
+                (set! outs (cons [ (user-from-id .?user users-hash)
+                                   channel
+                                   .?text
+                                   id
+                                   .?ts
+                                   .?team ] outs))))))))
+    (style-output outs)))
+
+(def (print-channels channels)
+  (when (list? channels)
+    (for (channel channels)
+      (print-channel channel))))
+
+(def (print-channel channel)
+  (if (hash-table? channel)
+    (let-hash channel
+      (displayln "is_channel: " .?is_channel
+                 " created: " .?created
+                 " is_member: " .?is_member
+                 " is_mpim: " .?is_mpim
+                 " previous_names: " .?previous_names
+                 " id: " .?id
+                 " unlinked: " .?unlinked
+                 " priority: " .?priority
+                 " has_pins: " .?has_pins
+                 " name: " .?name
+                 " is_archived: " .?is_archived
+                 " is_general: " .?is_general
+                 " creator: " .?creator
+                 " name_normalized: " .?name_normalized
+                 " is_org_shared: " .?is_org_shared
+                 " is_private: " .?is_private))))
+
+(def (set-topic channel topic)
+  (let* ((url "https://slack.com/api/conversations.setTopic")
+         (data (json-object->string
+                (hash
+                 ("topic" topic)
+                 ("channel" channel)))))
+    (with ([status body] (rest-call 'post url (default-headers) data))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (present-item body)))))
+
+(def (auth-test)
+  (let (url "https://slack.com/api/auth.test")
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (present-item body)))))
+
+(def (load-config)
+  (or *config-cache*
+      (let ((result (load-config!)))
+        (set! *config-cache* result)
+        result)))
+
+(def (load-config!)
+  (let ((config (hash))
+        (config-data (yaml-load config-file)))
+    (unless (and (list? config-data)
+                 (length>n? config-data 0)
+                 (hash-table? (car config-data)))
+      (displayln (format "Could not parse your config ~a" config-file))
+      (exit 2))
+
+    (hash-for-each
+     (lambda (k v)
+       (hash-put! config (string->symbol k) v))
+     (car config-data))
+
+    (let-hash config
+      (when (and .?key .?iv .?password)
+        (hash-put! config 'token (get-password-from-config .key .iv .password)))
+      (hash-put! config 'style (or .?style "org-mode"))
+      (when .?secrets
+        (let-hash (u8vector->object (base64-decode .secrets))
+          (let ((password (get-password-from-config .key .iv .password)))
+            (hash-put! config 'token password)))))
+    config))
+
+(def (default-headers)
+  (let-hash (load-config)
+    [
+     ["Accept" :: "*/*"]
+     ["Content-type" :: "application/json"]
+     ["Authorization" :: (format "Bearer ~a" .token) ]
+     ]))
+
+(def (whisper user channel msg)
+  (let* ((url "https://slack.com/api/chat.postEphemeral")
+         (data (json-object->string
+                (hash
+                 ("as_user" #t)
+                 ("attachments" #f)
+                 ("channel" channel)
+                 ("id" (im-open user))
+                 ("link_names" #t)
+                 ("parse" "none")
+                 ("user" (id-for-user user))
+                 ("text" msg)))))
+    (with ([status body] (rest-call 'post url (default-headers) data))
+      (unless status
+        (error body))
+      (present-item body))))
+
+(def (config)
+  (displayln "Please enter your slack token: ")
+  (let* ((password (read-password ##console-port))
+         (cipher (make-aes-256-ctr-cipher))
+         (iv (random-bytes (cipher-iv-length cipher)))
+         (key (random-bytes (cipher-key-length cipher)))
+         (encrypted-password (encrypt cipher key iv password))
+         (enc-pass-store (u8vector->base64-string encrypted-password))
+         (iv-store (u8vector->base64-string iv))
+         (key-store (u8vector->base64-string key))
+         (secrets (base64-encode (object->u8vector
+                                  (hash
+                                   (password enc-pass-store)
+                                   (iv iv-store)
+                                   (key key-store))))))
+    (displayln "Add the following secrets line to your " config-file)
+    (displayln "")
+    (displayln "secrets: " secrets)))
+
+(def (get-password-from-config key iv password)
+  (bytes->string
+   (decrypt
+    (make-aes-256-ctr-cipher)
+    (base64-string->u8vector key)
+    (base64-string->u8vector iv)
+    (base64-string->u8vector password))))
+
+(def (rtm-start-json)
+  (let (url "https://slack.com/api/rtm.start")
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (present-item body)))))
+
+(def (rtm-start)
+  (let (url "https://slack.com/api/rtm.start")
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (let-hash body
+          (when .?self
+            (displayln "self: " (hash->list .self)))
+          (displayln "OK: " .?ok)
+          (when (and .?dnd (hash-table? .dnd))
+            (displayln "dnd: " (hash->list .dnd)))
+          (displayln "url: " .?url)
+          (displayln "Channels: ------------------------------------------------------------")
+          (print-channels .?channels)
+          (displayln "Users: ------------------------------------------------------------")
+          (when .?users
+            (for (user .users)
+              (displayln (hash->list user))))
+          (displayln "Bots: ------------------------------------------------------------")
+          (when .?bots
+            (for (bot .bots)
+              (displayln (hash->list bot))))
+          (when .?team
+            (displayln "team: " (hash->list .team)))
+          (displayln "groups: " .?groups)
+          (displayln "self: " .?self)
+          (displayln "ims: " .?ims)
+          (displayln "thread_only_channels: " .?thread_only_channels)
+          (displayln "non_threadable_channels: " .?non_threadable_channels)
+          (displayln "subteams: " .?subteams)
+          (displayln "cache_version: " .?cache_version)
+          (displayln "cache_ts_version: " .?cache_ts_version)
+          (displayln "latest_event_ts: " .?latest_event_ts)
+          (displayln "can_manage_shared_channels: " .?can_manage_shared_channels)
+          (displayln "cache_ts: " .?cache_ts)
+          (displayln "read_only_channels: " .?read_only_channels))))))
+
+(def (gw group channel message)
+  "Take a group and whisper the message to each member in the channel"
+  (let-hash (load-config)
+    (when .?groups
+      (when (hash-table? .groups)
+        (if (hash-ref .groups group)
+          (for (user (hash-ref .groups group))
+            (whisper user channel message))
+          (displayln "Error: group " group " not found in " .groups))))))
+
+(def (set-presence presence-status)
+  "Set your status to Active, or Away"
+  (unless (or (string=? presence-status "active")
+              (string=? presence-status "away"))
+    (error "Error: only away, or active is allowed for status"))
+  (let* ((url "https://slack.com/api/users.setPresence")
+         (data (json-object->string (hash ("presence" presence-status)))))
+    (with ([status body] (rest-call 'post url (default-headers) data))
+      (unless status
+        (error body))
+      (present-item body))))
+
+(def (presence user)
+  "Get the presence status. away, or active of a user"
+  (let* ((id (id-for-user user))
+         (url (format "https://slack.com/api/users.getPresence?user=~a" id)))
+    (with ([status body] (rest-call 'get url (default-headers)))
+      (unless status
+        (error body))
+      (when (hash-table? body)
+        (let-hash body
+          (displayln (format "~a is currently ~a" user .presence)))))))
+
+(def (away)
+  "Set status away"
+  (set-presence "away"))
+
+(def (active)
+  "Set status active"
+  (set-presence "active"))

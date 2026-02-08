@@ -6,21 +6,20 @@ DOCKER_IMAGE := "gerbil/gerbilxx:$(ARCH)-master"
 UID := $(shell id -u)
 GID := $(shell id -g)
 
-default: build
+default: linux-static-docker
 
 check-root:
 	@if [ "${UID}" -eq 0 ]; then \
 	git config --global --add safe.directory /src; \
 	fi
 
-build: check-root
-	gerbil build
+deps:
+	$(GERBIL_HOME)/bin/gxpkg install github.com/mighty-gerbils/gerbil-libyaml
+	$(GERBIL_HOME)/bin/gxpkg install github.com/ober/oberlib
 
-test:
-	gerbil test ./...
-
-clean:
-	rm -rf .gerbil
+build: deps check-root
+	$(GERBIL_HOME)/bin/gxpkg link $(PROJECT) /src || true
+	$(GERBIL_HOME)/bin/gxpkg build -R $(PROJECT)
 
 linux-static-docker: clean
 	docker run -t \
@@ -29,7 +28,8 @@ linux-static-docker: clean
 	$(DOCKER_IMAGE) \
 	make -C /src build
 
+clean:
+	rm -rf .gerbil manifest.ss
+
 install:
 	mv .gerbil/bin/$(PROJECT) /usr/local/bin/$(PROJECT)
-
-.PHONY: default build test clean linux-static-docker install check-root

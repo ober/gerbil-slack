@@ -4,9 +4,22 @@
 (import :std/build-script)
 
 (defbuild-script
-  '("slack/client"
-    (exe:
-     "slack/slack"
-     "-ld-options"
-     "-lyaml"
-     )))
+  '("slack/types"
+    "slack/config"
+    "slack/http"
+    "slack/api/auth"
+    "slack/api/users"
+    "slack/api/conversations"
+    "slack/api/chat"
+    "slack/api/reactions"
+    "slack/api/files"
+    "slack/api/pins"
+    "slack/api/search"
+    "slack/api/emoji"
+    "slack/api/team"
+    "slack/api/reminders"
+    "slack/api/dnd"
+    "slack/api/usergroups"
+    "slack/api/bookmarks"
+    "slack/client"
+    (exe: "slack/slack")))
