@@ -25,5 +25,7 @@
     "slack/socket"
     "slack/cache"
     "slack/markdown"
+    "slack/cli/format"
+    "slack/cli/commands"
     "slack/client"
     (exe: "slack/slack")))
